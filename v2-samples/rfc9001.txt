@@ -2171,13 +2171,13 @@ Table of Contents
    The Recommended column for this extension is marked Yes. The TLS 1.3
    Column includes CH (ClientHello) and EE (EncryptedExtensions).
 
-   +=======+===========================+=====+=============+===========+
-   | Value | Extension Name            | TLS | Recommended | Reference |
-   |       |                           | 1.3 |             |           |
-   +=======+===========================+=====+=============+===========+
-   |    57 | quic_transport_parameters | CH, | Y           | This      |
-   |       |                           | EE  |             | document  |
-   +-------+---------------------------+-----+-------------+-----------+
+    +=======+===========================+===+=============+===========+
+    | Value | Extension Name            |TLS| Recommended | Reference |
+    |       |                           |1.3|             |           |
+    +=======+===========================+===+=============+===========+
+    |    57 | quic_transport_parameters |CH,| Y           | This      |
+    |       |                           |EE |             | document  |
+    +-------+---------------------------+---+-------------+-----------+
 
               Table 2: TLS ExtensionType Values Registry Entry
 
@@ -2297,7 +2297,7 @@ Table of Contents
    [QUIC-HTTP]
               Bishop, M., Ed., "Hypertext Transfer Protocol Version 3
               (HTTP/3)", Work in Progress, Internet-Draft, draft-ietf-
-              quic-http, 20 June 2022,
+              quic-http, 12 December 2022,
               <https://datatracker.ietf.org/doc/html/draft-ietf-quic-
               http>.
 

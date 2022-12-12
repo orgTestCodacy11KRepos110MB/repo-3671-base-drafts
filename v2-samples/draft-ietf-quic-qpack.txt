@@ -5,10 +5,10 @@
 QUIC                                                           C. Krasic
 Internet-Draft                                                   Netflix
 Intended status: Standards Track                               M. Bishop
-Expires: 22 December 2022                            Akamai Technologies
+Expires: 15 June 2023                                Akamai Technologies
                                                         A. Frindell, Ed.
                                                                 Facebook
-                                                            20 June 2022
+                                                        12 December 2022
 
 
                   QPACK: Header Compression for HTTP/3
@@ -36,7 +36,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 22 December 2022.
+   This Internet-Draft will expire on 15 June 2023.
 
 Copyright Notice
 
@@ -1503,21 +1503,22 @@ Table of Contents
    following table are registered in the "HTTP/3 Error Code" registry
    established in [HTTP3].
 
-   +============================+========+=============+===============+
-   | Name                       | Code   |Description  | Specification |
-   +============================+========+=============+===============+
-   | QPACK_DECOMPRESSION_FAILED | 0x0200 |Decoding of a| Section 6     |
-   |                            |        |field section|               |
-   |                            |        |failed       |               |
-   +----------------------------+--------+-------------+---------------+
-   | QPACK_ENCODER_STREAM_ERROR | 0x0201 |Error on the | Section 6     |
-   |                            |        |encoder      |               |
-   |                            |        |stream       |               |
-   +----------------------------+--------+-------------+---------------+
-   | QPACK_DECODER_STREAM_ERROR | 0x0202 |Error on the | Section 6     |
-   |                            |        |decoder      |               |
-   |                            |        |stream       |               |
-   +----------------------------+--------+-------------+---------------+
+   +============================+======+===============+===============+
+   | Name                       |Code  | Description   | Specification |
+   +============================+======+===============+===============+
+   | QPACK_DECOMPRESSION_FAILED |0x0200| Decoding of   | Section 6     |
+   |                            |      | a field       |               |
+   |                            |      | section       |               |
+   |                            |      | failed        |               |
+   +----------------------------+------+---------------+---------------+
+   | QPACK_ENCODER_STREAM_ERROR |0x0201| Error on      | Section 6     |
+   |                            |      | the encoder   |               |
+   |                            |      | stream        |               |
+   +----------------------------+------+---------------+---------------+
+   | QPACK_DECODER_STREAM_ERROR |0x0202| Error on      | Section 6     |
+   |                            |      | the decoder   |               |
+   |                            |      | stream        |               |
+   +----------------------------+------+---------------+---------------+
 
                                   Table 3
 
@@ -1527,14 +1528,14 @@ Table of Contents
 
    [HTTP3]    Bishop, M., Ed., "Hypertext Transfer Protocol Version 3
               (HTTP/3)", Work in Progress, Internet-Draft, draft-ietf-
-              quic-http, 20 June 2022,
+              quic-http, 12 December 2022,
               <https://datatracker.ietf.org/doc/html/draft-ietf-quic-
               http>.
 
    [QUIC-TRANSPORT]
               Iyengar, J., Ed. and M. Thomson, Ed., "QUIC: A UDP-Based
               Multiplexed and Secure Transport", RFC 9000,
-              DOI 10.17487/RFC9000, 20 June 2022,
+              DOI 10.17487/RFC9000, 12 December 2022,
               <https://www.rfc-editor.org/rfc/rfc9000>.
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate

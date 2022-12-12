@@ -1,46 +1,39 @@
 <!DOCTYPE html>
-<html lang="en" class="RFC">
+<html lang="en" class="Internet-Draft">
 <head>
 <meta charset="utf-8">
 <meta content="Common,Latin" name="scripts">
 <meta content="initial-scale=1.0" name="viewport">
-<title>RFC 9204: QPACK: Field Compression for HTTP/3</title>
+<title>QPACK: Header Compression for HTTP/3</title>
 <meta content="Charles 'Buck' Krasic" name="author">
 <meta content="Mike Bishop" name="author">
 <meta content="Alan Frindell" name="author">
 <meta content="
-       This specification defines QPACK: a compression format for efficiently
-representing HTTP fields that is to be used in HTTP/3. This is a variation of
-HPACK compression that seeks to reduce head-of-line blocking. 
+       This specification defines QPACK, a compression format for efficiently
+representing HTTP fields, to be used in HTTP/3. This is a variation of HPACK
+compression that seeks to reduce head-of-line blocking. 
     " name="description">
-<meta content="xml2rfc 3.12.10" name="generator">
-<meta content="compression" name="keyword">
-<meta content="HTTP/3" name="keyword">
-<meta content="HPACK" name="keyword">
-<meta content="header" name="keyword">
-<meta content="field" name="keyword">
-<meta content="trailer" name="keyword">
-<meta content="9204" name="rfc.number">
+<meta content="xml2rfc 3.15.3" name="generator">
+<meta content="draft-ietf-quic-qpack-latest" name="ietf.draft">
 <!-- Generator version information:
-  xml2rfc 3.12.10
-    Python 3.10.4
+  xml2rfc 3.15.3
+    Python 3.10.8
     appdirs 1.4.4
     ConfigArgParse 1.5.3
-    google-i18n-address 2.5.1
+    google-i18n-address 2.5.2
     html5lib 1.1
     intervaltree 3.1.0
-    Jinja2 2.11.3
-    kitchen 1.2.6
-    lxml 4.8.0
-    MarkupSafe 2.0.1
-    pycountry 20.7.3
-    pyflakes 2.4.0
+    Jinja2 3.1.2
+    lxml 4.9.1
+    MarkupSafe 2.1.1
+    pycountry 22.3.5
     PyYAML 6.0
-    requests 2.27.1
-    setuptools 59.4.0
+    requests 2.28.1
+    setuptools 65.6.0
     six 1.16.0
+    wcwidth 0.2.5
 -->
-<link href="rfc9204.xml" rel="alternate" type="application/rfc+xml">
+<link href="draft-ietf-quic-qpack.xml" rel="alternate" type="application/rfc+xml">
 <link href="#copyright" rel="license">
 <style type="text/css">@font-face {
   font-family: 'Lora';
@@ -375,23 +368,37 @@ ul.empty li, .ulEmpty li {
 
 /* definition lists */
 dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
 }
 dl > dt {
   float: left;
   margin-right: 1em;
+  min-width: 12ch;
+}
+dl.dlNewline > dt {
+  float: none;
 }
 dl > dd {
   margin-bottom: .8em;
-  min-height: 1.3em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
 }
 :is(dl.compact, .dlCompact) > dd {
-  margin-bottom: 0em;
+  margin-bottom: 0;
+}
+:is(dl.compact, .dlCompact) > dd > :is(:first-child, .break:first-child + *) {
+  margin-top: 0;
+}
+:is(dl.compact, .dlCompact) > dd > :is(:last-child) {
+  margin-bottom: 0;
 }
 dl > dd > dl {
   margin-top: 0.5em;
-  margin-bottom: 0em;
+  margin-bottom: 0;
 }
-dd.break {
+dl .break {
   display: none;
 }
 
@@ -586,17 +593,18 @@ hr {
   margin: 0;
   font-size: var(--small-font-size);
   line-height: 18px;
-  --identifier-width: 8em;
+  --identifier-width: 15ch;
 }
 #identifiers dt {
   width: var(--identifier-width);
-  margin: 0;
+  min-width: var(--identifier-width);
   clear: left;
   float: left;
   text-align: right;
 }
 #identifiers dd {
-  margin: 0 0 0 calc(1em + var(--identifier-width));
+  margin: 0;
+  margin-left: calc(1em + var(--identifier-width)) !important;
   min-width: 5em;
 }
 #identifiers .authors .author {
@@ -646,8 +654,13 @@ hr {
   font-weight: bold;
   min-width: 7em;
 }
+.references dt:target::before {
+  content: "⇒";
+  width: 15px;
+  margin: 0 10px 0 -25px;
+}
 .references dd {
-  margin-left: 8em;
+  margin-left: 8em !important;
   overflow: auto;
 }
 
@@ -914,16 +927,6 @@ a.toplink {
   margin: 8px 0.5em 0;
 }
 
-/* Fix the dl styling to match the RFC 7992 attributes */
-dl > dt,
-dl.dlParallel > dt {
-  float: left;
-  margin-right: 1em;
-}
-dl.dlNewline > dt {
-  float: none;
-}
-
 /* Provide styling for table cell text alignment */
 table .text-left {
   text-align: left;
@@ -1029,42 +1032,40 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 }
 </style>
 
-<link href="https://dx.doi.org/10.17487/rfc9204" rel="alternate">
-  <link href="urn:issn:2070-1721" rel="alternate">
-  <link href="https://datatracker.ietf.org/doc/draft-ietf-quic-qpack-latest" rel="prev">
-  </head>
-<body>
+</head>
+<body class="xml2rfc">
 <table class="ears">
 <thead><tr>
-<td class="left">RFC 9204</td>
+<td class="left">Internet-Draft</td>
 <td class="center">QPACK</td>
-<td class="right">May 2022</td>
+<td class="right">December 2022</td>
 </tr></thead>
 <tfoot><tr>
 <td class="left">Krasic, et al.</td>
-<td class="center">Standards Track</td>
+<td class="center">Expires 15 June 2023</td>
 <td class="right">[Page]</td>
 </tr></tfoot>
 </table>
 <div id="external-metadata" class="document-information"></div>
 <div id="internal-metadata" class="document-information">
 <dl id="identifiers">
-<dt class="label-stream">Stream:</dt>
-<dd class="stream">Internet Engineering Task Force (IETF)</dd>
-<dt class="label-rfc">RFC:</dt>
-<dd class="rfc"><a href="https://www.rfc-editor.org/rfc/rfc9204" class="eref">9204</a></dd>
-<dt class="label-category">Category:</dt>
-<dd class="category">Standards Track</dd>
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">QUIC</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-ietf-quic-qpack-latest</dd>
 <dt class="label-published">Published:</dt>
 <dd class="published">
-<time datetime="2022-05" class="published">May 2022</time>
+<time datetime="2022-12-12" class="published">12 December 2022</time>
     </dd>
-<dt class="label-issn">ISSN:</dt>
-<dd class="issn">2070-1721</dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2023-06-15">15 June 2023</time></dd>
 <dt class="label-authors">Authors:</dt>
 <dd class="authors">
 <div class="author">
       <div class="author-name">C. Krasic</div>
+<div class="org">Netflix</div>
 </div>
 <div class="author">
       <div class="author-name">M. Bishop</div>
@@ -1078,13 +1079,12 @@ svg :is([stroke="fill"], [fill^="#fff"]) {
 </dd>
 </dl>
 </div>
-<h1 id="rfcnum">RFC 9204</h1>
-<h1 id="title">QPACK: Field Compression for HTTP/3</h1>
+<h1 id="title">QPACK: Header Compression for HTTP/3</h1>
 <section id="section-abstract">
       <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
-<p id="section-abstract-1">This specification defines QPACK: a compression format for efficiently
-representing HTTP fields that is to be used in HTTP/3. This is a variation of
-HPACK compression that seeks to reduce head-of-line blocking.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-1">This specification defines QPACK, a compression format for efficiently
+representing HTTP fields, to be used in HTTP/3. This is a variation of HPACK
+compression that seeks to reduce head-of-line blocking.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
 </section>
 <div id="status-of-memo">
 <section id="section-boilerplate.1">
@@ -1092,18 +1092,20 @@ HPACK compression that seeks to reduce head-of-line blocking.<a href="#section-a
 <a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
         </h2>
 <p id="section-boilerplate.1-1">
-            This is an Internet Standards Track document.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-2">
-            This document is a product of the Internet Engineering Task Force
-            (IETF).  It represents the consensus of the IETF community.  It has
-            received public review and has been approved for publication by
-            the Internet Engineering Steering Group (IESG).  Further
-            information on Internet Standards is available in Section 2 of 
-            RFC 7841.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
 <p id="section-boilerplate.1-3">
-            Information about the current status of this document, any
-            errata, and how to provide feedback on it may be obtained at
-            <span><a href="https://www.rfc-editor.org/info/rfc9204">https://www.rfc-editor.org/info/rfc9204</a></span>.<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 15 June 2023.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="copyright">
@@ -1133,246 +1135,246 @@ HPACK compression that seeks to reduce head-of-line blocking.<a href="#section-a
         </h2>
 <nav class="toc"><ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
-            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="xref">1</a>.  <a href="#name-introduction" class="xref">Introduction</a></p>
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
-                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="xref">1.1</a>.  <a href="#name-conventions-and-definitions" class="xref">Conventions and Definitions</a></p>
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
-                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="xref">1.2</a>.  <a href="#name-notational-conventions" class="xref">Notational Conventions</a></p>
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-notational-conventions" class="internal xref">Notational Conventions</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
-            <p id="section-toc.1-1.2.1"><a href="#section-2" class="xref">2</a>.  <a href="#name-compression-process-overvie" class="xref">Compression Process Overview</a></p>
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-compression-process-overvie" class="internal xref">Compression Process Overview</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1">
-                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="xref">2.1</a>.  <a href="#name-encoder" class="xref">Encoder</a></p>
+                <p id="section-toc.1-1.2.2.1.1"><a href="#section-2.1" class="auto internal xref">2.1</a>.  <a href="#name-encoder" class="internal xref">Encoder</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1.2.1">
-                    <p id="section-toc.1-1.2.2.1.2.1.1"><a href="#section-2.1.1" class="xref">2.1.1</a>.  <a href="#name-limits-on-dynamic-table-ins" class="xref">Limits on Dynamic Table Insertions</a></p>
+                    <p id="section-toc.1-1.2.2.1.2.1.1"><a href="#section-2.1.1" class="auto internal xref">2.1.1</a>.  <a href="#name-limits-on-dynamic-table-ins" class="internal xref">Limits on Dynamic Table Insertions</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1.2.2">
-                    <p id="section-toc.1-1.2.2.1.2.2.1"><a href="#section-2.1.2" class="xref">2.1.2</a>.  <a href="#name-blocked-streams" class="xref">Blocked Streams</a></p>
+                    <p id="section-toc.1-1.2.2.1.2.2.1"><a href="#section-2.1.2" class="auto internal xref">2.1.2</a>.  <a href="#name-blocked-streams" class="internal xref">Blocked Streams</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1.2.3">
-                    <p id="section-toc.1-1.2.2.1.2.3.1"><a href="#section-2.1.3" class="xref">2.1.3</a>.  <a href="#name-avoiding-flow-control-deadl" class="xref">Avoiding Flow-Control Deadlocks</a></p>
+                    <p id="section-toc.1-1.2.2.1.2.3.1"><a href="#section-2.1.3" class="auto internal xref">2.1.3</a>.  <a href="#name-avoiding-flow-control-deadl" class="internal xref">Avoiding Flow Control Deadlocks</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.1.2.4">
-                    <p id="section-toc.1-1.2.2.1.2.4.1"><a href="#section-2.1.4" class="xref">2.1.4</a>.  <a href="#name-known-received-count" class="xref">Known Received Count</a></p>
+                    <p id="section-toc.1-1.2.2.1.2.4.1"><a href="#section-2.1.4" class="auto internal xref">2.1.4</a>.  <a href="#name-known-received-count" class="internal xref">Known Received Count</a></p>
 </li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2">
-                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="xref">2.2</a>.  <a href="#name-decoder" class="xref">Decoder</a></p>
+                <p id="section-toc.1-1.2.2.2.1"><a href="#section-2.2" class="auto internal xref">2.2</a>.  <a href="#name-decoder" class="internal xref">Decoder</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2.2.1">
-                    <p id="section-toc.1-1.2.2.2.2.1.1"><a href="#section-2.2.1" class="xref">2.2.1</a>.  <a href="#name-blocked-decoding" class="xref">Blocked Decoding</a></p>
+                    <p id="section-toc.1-1.2.2.2.2.1.1"><a href="#section-2.2.1" class="auto internal xref">2.2.1</a>.  <a href="#name-blocked-decoding" class="internal xref">Blocked Decoding</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2.2.2">
-                    <p id="section-toc.1-1.2.2.2.2.2.1"><a href="#section-2.2.2" class="xref">2.2.2</a>.  <a href="#name-state-synchronization" class="xref">State Synchronization</a></p>
+                    <p id="section-toc.1-1.2.2.2.2.2.1"><a href="#section-2.2.2" class="auto internal xref">2.2.2</a>.  <a href="#name-state-synchronization" class="internal xref">State Synchronization</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2.2.2.2.3">
-                    <p id="section-toc.1-1.2.2.2.2.3.1"><a href="#section-2.2.3" class="xref">2.2.3</a>.  <a href="#name-invalid-references" class="xref">Invalid References</a></p>
+                    <p id="section-toc.1-1.2.2.2.2.3.1"><a href="#section-2.2.3" class="auto internal xref">2.2.3</a>.  <a href="#name-invalid-references" class="internal xref">Invalid References</a></p>
 </li>
                 </ul>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
-            <p id="section-toc.1-1.3.1"><a href="#section-3" class="xref">3</a>.  <a href="#name-reference-tables" class="xref">Reference Tables</a></p>
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-reference-tables" class="internal xref">Reference Tables</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
-                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="xref">3.1</a>.  <a href="#name-static-table" class="xref">Static Table</a></p>
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-static-table" class="internal xref">Static Table</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
-                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="xref">3.2</a>.  <a href="#name-dynamic-table" class="xref">Dynamic Table</a></p>
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-dynamic-table" class="internal xref">Dynamic Table</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.1">
-                    <p id="section-toc.1-1.3.2.2.2.1.1"><a href="#section-3.2.1" class="xref">3.2.1</a>.  <a href="#name-dynamic-table-size" class="xref">Dynamic Table Size</a></p>
+                    <p id="section-toc.1-1.3.2.2.2.1.1"><a href="#section-3.2.1" class="auto internal xref">3.2.1</a>.  <a href="#name-dynamic-table-size" class="internal xref">Dynamic Table Size</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.2">
-                    <p id="section-toc.1-1.3.2.2.2.2.1"><a href="#section-3.2.2" class="xref">3.2.2</a>.  <a href="#name-dynamic-table-capacity-and-" class="xref">Dynamic Table Capacity and Eviction</a></p>
+                    <p id="section-toc.1-1.3.2.2.2.2.1"><a href="#section-3.2.2" class="auto internal xref">3.2.2</a>.  <a href="#name-dynamic-table-capacity-and-" class="internal xref">Dynamic Table Capacity and Eviction</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.3">
-                    <p id="section-toc.1-1.3.2.2.2.3.1"><a href="#section-3.2.3" class="xref">3.2.3</a>.  <a href="#name-maximum-dynamic-table-capac" class="xref">Maximum Dynamic Table Capacity</a></p>
+                    <p id="section-toc.1-1.3.2.2.2.3.1"><a href="#section-3.2.3" class="auto internal xref">3.2.3</a>.  <a href="#name-maximum-dynamic-table-capac" class="internal xref">Maximum Dynamic Table Capacity</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.4">
-                    <p id="section-toc.1-1.3.2.2.2.4.1"><a href="#section-3.2.4" class="xref">3.2.4</a>.  <a href="#name-absolute-indexing" class="xref">Absolute Indexing</a></p>
+                    <p id="section-toc.1-1.3.2.2.2.4.1"><a href="#section-3.2.4" class="auto internal xref">3.2.4</a>.  <a href="#name-absolute-indexing" class="internal xref">Absolute Indexing</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.5">
-                    <p id="section-toc.1-1.3.2.2.2.5.1"><a href="#section-3.2.5" class="xref">3.2.5</a>.  <a href="#name-relative-indexing" class="xref">Relative Indexing</a></p>
+                    <p id="section-toc.1-1.3.2.2.2.5.1"><a href="#section-3.2.5" class="auto internal xref">3.2.5</a>.  <a href="#name-relative-indexing" class="internal xref">Relative Indexing</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2.2.6">
-                    <p id="section-toc.1-1.3.2.2.2.6.1"><a href="#section-3.2.6" class="xref">3.2.6</a>.  <a href="#name-post-base-indexing" class="xref">Post-Base Indexing</a></p>
+                    <p id="section-toc.1-1.3.2.2.2.6.1"><a href="#section-3.2.6" class="auto internal xref">3.2.6</a>.  <a href="#name-post-base-indexing" class="internal xref">Post-Base Indexing</a></p>
 </li>
                 </ul>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
-            <p id="section-toc.1-1.4.1"><a href="#section-4" class="xref">4</a>.  <a href="#name-wire-format" class="xref">Wire Format</a></p>
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-wire-format" class="internal xref">Wire Format</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
-                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="xref">4.1</a>.  <a href="#name-primitives" class="xref">Primitives</a></p>
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-primitives" class="internal xref">Primitives</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
-                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="xref">4.1.1</a>.  <a href="#name-prefixed-integers" class="xref">Prefixed Integers</a></p>
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-prefixed-integers" class="internal xref">Prefixed Integers</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
-                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="xref">4.1.2</a>.  <a href="#name-string-literals" class="xref">String Literals</a></p>
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-string-literals" class="internal xref">String Literals</a></p>
 </li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
-                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="xref">4.2</a>.  <a href="#name-encoder-and-decoder-streams" class="xref">Encoder and Decoder Streams</a></p>
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-encoder-and-decoder-streams" class="internal xref">Encoder and Decoder Streams</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
-                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="xref">4.3</a>.  <a href="#name-encoder-instructions" class="xref">Encoder Instructions</a></p>
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-encoder-instructions" class="internal xref">Encoder Instructions</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.1">
-                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="xref">4.3.1</a>.  <a href="#name-set-dynamic-table-capacity" class="xref">Set Dynamic Table Capacity</a></p>
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="auto internal xref">4.3.1</a>.  <a href="#name-set-dynamic-table-capacity" class="internal xref">Set Dynamic Table Capacity</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.2">
-                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="xref">4.3.2</a>.  <a href="#name-insert-with-name-reference" class="xref">Insert with Name Reference</a></p>
+                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="auto internal xref">4.3.2</a>.  <a href="#name-insert-with-name-reference" class="internal xref">Insert With Name Reference</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.3">
-                    <p id="section-toc.1-1.4.2.3.2.3.1"><a href="#section-4.3.3" class="xref">4.3.3</a>.  <a href="#name-insert-with-literal-name" class="xref">Insert with Literal Name</a></p>
+                    <p id="section-toc.1-1.4.2.3.2.3.1"><a href="#section-4.3.3" class="auto internal xref">4.3.3</a>.  <a href="#name-insert-with-literal-name" class="internal xref">Insert With Literal Name</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.4">
-                    <p id="section-toc.1-1.4.2.3.2.4.1"><a href="#section-4.3.4" class="xref">4.3.4</a>.  <a href="#name-duplicate" class="xref">Duplicate</a></p>
+                    <p id="section-toc.1-1.4.2.3.2.4.1"><a href="#section-4.3.4" class="auto internal xref">4.3.4</a>.  <a href="#name-duplicate" class="internal xref">Duplicate</a></p>
 </li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4">
-                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="xref">4.4</a>.  <a href="#name-decoder-instructions" class="xref">Decoder Instructions</a></p>
+                <p id="section-toc.1-1.4.2.4.1"><a href="#section-4.4" class="auto internal xref">4.4</a>.  <a href="#name-decoder-instructions" class="internal xref">Decoder Instructions</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.1">
-                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="xref">4.4.1</a>.  <a href="#name-section-acknowledgment" class="xref">Section Acknowledgment</a></p>
+                    <p id="section-toc.1-1.4.2.4.2.1.1"><a href="#section-4.4.1" class="auto internal xref">4.4.1</a>.  <a href="#name-section-acknowledgment" class="internal xref">Section Acknowledgment</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.2">
-                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="xref">4.4.2</a>.  <a href="#name-stream-cancellation" class="xref">Stream Cancellation</a></p>
+                    <p id="section-toc.1-1.4.2.4.2.2.1"><a href="#section-4.4.2" class="auto internal xref">4.4.2</a>.  <a href="#name-stream-cancellation" class="internal xref">Stream Cancellation</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.4.2.3">
-                    <p id="section-toc.1-1.4.2.4.2.3.1"><a href="#section-4.4.3" class="xref">4.4.3</a>.  <a href="#name-insert-count-increment" class="xref">Insert Count Increment</a></p>
+                    <p id="section-toc.1-1.4.2.4.2.3.1"><a href="#section-4.4.3" class="auto internal xref">4.4.3</a>.  <a href="#name-insert-count-increment" class="internal xref">Insert Count Increment</a></p>
 </li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5">
-                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="xref">4.5</a>.  <a href="#name-field-line-representations" class="xref">Field Line Representations</a></p>
+                <p id="section-toc.1-1.4.2.5.1"><a href="#section-4.5" class="auto internal xref">4.5</a>.  <a href="#name-field-line-representations" class="internal xref">Field Line Representations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5.2.1">
-                    <p id="section-toc.1-1.4.2.5.2.1.1"><a href="#section-4.5.1" class="xref">4.5.1</a>.  <a href="#name-encoded-field-section-prefi" class="xref">Encoded Field Section Prefix</a></p>
+                    <p id="section-toc.1-1.4.2.5.2.1.1"><a href="#section-4.5.1" class="auto internal xref">4.5.1</a>.  <a href="#name-encoded-field-section-prefi" class="internal xref">Encoded Field Section Prefix</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5.2.2">
-                    <p id="section-toc.1-1.4.2.5.2.2.1"><a href="#section-4.5.2" class="xref">4.5.2</a>.  <a href="#name-indexed-field-line" class="xref">Indexed Field Line</a></p>
+                    <p id="section-toc.1-1.4.2.5.2.2.1"><a href="#section-4.5.2" class="auto internal xref">4.5.2</a>.  <a href="#name-indexed-field-line" class="internal xref">Indexed Field Line</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5.2.3">
-                    <p id="section-toc.1-1.4.2.5.2.3.1"><a href="#section-4.5.3" class="xref">4.5.3</a>.  <a href="#name-indexed-field-line-with-pos" class="xref">Indexed Field Line with Post-Base Index</a></p>
+                    <p id="section-toc.1-1.4.2.5.2.3.1"><a href="#section-4.5.3" class="auto internal xref">4.5.3</a>.  <a href="#name-indexed-field-line-with-pos" class="internal xref">Indexed Field Line With Post-Base Index</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5.2.4">
-                    <p id="section-toc.1-1.4.2.5.2.4.1"><a href="#section-4.5.4" class="xref">4.5.4</a>.  <a href="#name-literal-field-line-with-nam" class="xref">Literal Field Line with Name Reference</a></p>
+                    <p id="section-toc.1-1.4.2.5.2.4.1"><a href="#section-4.5.4" class="auto internal xref">4.5.4</a>.  <a href="#name-literal-field-line-with-nam" class="internal xref">Literal Field Line With Name Reference</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5.2.5">
-                    <p id="section-toc.1-1.4.2.5.2.5.1"><a href="#section-4.5.5" class="xref">4.5.5</a>.  <a href="#name-literal-field-line-with-pos" class="xref">Literal Field Line with Post-Base Name Reference</a></p>
+                    <p id="section-toc.1-1.4.2.5.2.5.1"><a href="#section-4.5.5" class="auto internal xref">4.5.5</a>.  <a href="#name-literal-field-line-with-pos" class="internal xref">Literal Field Line With Post-Base Name Reference</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.5.2.6">
-                    <p id="section-toc.1-1.4.2.5.2.6.1"><a href="#section-4.5.6" class="xref">4.5.6</a>.  <a href="#name-literal-field-line-with-lit" class="xref">Literal Field Line with Literal Name</a></p>
+                    <p id="section-toc.1-1.4.2.5.2.6.1"><a href="#section-4.5.6" class="auto internal xref">4.5.6</a>.  <a href="#name-literal-field-line-with-lit" class="internal xref">Literal Field Line With Literal Name</a></p>
 </li>
                 </ul>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
-            <p id="section-toc.1-1.5.1"><a href="#section-5" class="xref">5</a>.  <a href="#name-configuration" class="xref">Configuration</a></p>
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-configuration" class="internal xref">Configuration</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
-            <p id="section-toc.1-1.6.1"><a href="#section-6" class="xref">6</a>.  <a href="#name-error-handling" class="xref">Error Handling</a></p>
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-error-handling" class="internal xref">Error Handling</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
-            <p id="section-toc.1-1.7.1"><a href="#section-7" class="xref">7</a>.  <a href="#name-security-considerations" class="xref">Security Considerations</a></p>
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
-                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="xref">7.1</a>.  <a href="#name-probing-dynamic-table-state" class="xref">Probing Dynamic Table State</a></p>
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-probing-dynamic-table-state" class="internal xref">Probing Dynamic Table State</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1.2.1">
-                    <p id="section-toc.1-1.7.2.1.2.1.1"><a href="#section-7.1.1" class="xref">7.1.1</a>.  <a href="#name-applicability-to-qpack-and-" class="xref">Applicability to QPACK and HTTP</a></p>
+                    <p id="section-toc.1-1.7.2.1.2.1.1"><a href="#section-7.1.1" class="auto internal xref">7.1.1</a>.  <a href="#name-applicability-to-qpack-and-" class="internal xref">Applicability to QPACK and HTTP</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1.2.2">
-                    <p id="section-toc.1-1.7.2.1.2.2.1"><a href="#section-7.1.2" class="xref">7.1.2</a>.  <a href="#name-mitigation" class="xref">Mitigation</a></p>
+                    <p id="section-toc.1-1.7.2.1.2.2.1"><a href="#section-7.1.2" class="auto internal xref">7.1.2</a>.  <a href="#name-mitigation" class="internal xref">Mitigation</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1.2.3">
-                    <p id="section-toc.1-1.7.2.1.2.3.1"><a href="#section-7.1.3" class="xref">7.1.3</a>.  <a href="#name-never-indexed-literals" class="xref">Never-Indexed Literals</a></p>
+                    <p id="section-toc.1-1.7.2.1.2.3.1"><a href="#section-7.1.3" class="auto internal xref">7.1.3</a>.  <a href="#name-never-indexed-literals" class="internal xref">Never-Indexed Literals</a></p>
 </li>
                 </ul>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
-                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="xref">7.2</a>.  <a href="#name-static-huffman-encoding" class="xref">Static Huffman Encoding</a></p>
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-static-huffman-encoding" class="internal xref">Static Huffman Encoding</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
-                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="xref">7.3</a>.  <a href="#name-memory-consumption" class="xref">Memory Consumption</a></p>
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-memory-consumption" class="internal xref">Memory Consumption</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
-                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="xref">7.4</a>.  <a href="#name-implementation-limits" class="xref">Implementation Limits</a></p>
+                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-implementation-limits" class="internal xref">Implementation Limits</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
-            <p id="section-toc.1-1.8.1"><a href="#section-8" class="xref">8</a>.  <a href="#name-iana-considerations" class="xref">IANA Considerations</a></p>
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
-                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="xref">8.1</a>.  <a href="#name-settings-registration" class="xref">Settings Registration</a></p>
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-settings-registration" class="internal xref">Settings Registration</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
-                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="xref">8.2</a>.  <a href="#name-stream-type-registration" class="xref">Stream Type Registration</a></p>
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-stream-type-registration" class="internal xref">Stream Type Registration</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
-                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="xref">8.3</a>.  <a href="#name-error-code-registration" class="xref">Error Code Registration</a></p>
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-error-code-registration" class="internal xref">Error Code Registration</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
-            <p id="section-toc.1-1.9.1"><a href="#section-9" class="xref">9</a>.  <a href="#name-references" class="xref">References</a></p>
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
-                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="xref">9.1</a>.  <a href="#name-normative-references" class="xref">Normative References</a></p>
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
-                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="xref">9.2</a>.  <a href="#name-informative-references" class="xref">Informative References</a></p>
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
-            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="xref">Appendix A</a>.  <a href="#name-static-table-2" class="xref">Static Table</a></p>
+            <p id="section-toc.1-1.10.1"><a href="#appendix-A" class="auto internal xref">Appendix A</a>.  <a href="#name-static-table-2" class="internal xref">Static Table</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
-            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="xref">Appendix B</a>.  <a href="#name-encoding-and-decoding-examp" class="xref">Encoding and Decoding Examples</a></p>
+            <p id="section-toc.1-1.11.1"><a href="#appendix-B" class="auto internal xref">Appendix B</a>.  <a href="#name-encoding-and-decoding-examp" class="internal xref">Encoding and Decoding Examples</a></p>
 <ul class="compact toc ulBare ulEmpty">
 <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
-                <p id="section-toc.1-1.11.2.1.1"><a href="#appendix-B.1" class="xref">B.1</a>.  <a href="#name-literal-field-line-with-name-" class="xref">Literal Field Line with Name Reference</a></p>
+                <p id="section-toc.1-1.11.2.1.1"><a href="#appendix-B.1" class="auto internal xref">B.1</a>.  <a href="#name-literal-field-line-with-name-" class="internal xref">Literal Field Line With Name Reference</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
-                <p id="section-toc.1-1.11.2.2.1"><a href="#appendix-B.2" class="xref">B.2</a>.  <a href="#name-dynamic-table-2" class="xref">Dynamic Table</a></p>
+                <p id="section-toc.1-1.11.2.2.1"><a href="#appendix-B.2" class="auto internal xref">B.2</a>.  <a href="#name-dynamic-table-2" class="internal xref">Dynamic Table</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
-                <p id="section-toc.1-1.11.2.3.1"><a href="#appendix-B.3" class="xref">B.3</a>.  <a href="#name-speculative-insert" class="xref">Speculative Insert</a></p>
+                <p id="section-toc.1-1.11.2.3.1"><a href="#appendix-B.3" class="auto internal xref">B.3</a>.  <a href="#name-speculative-insert" class="internal xref">Speculative Insert</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4">
-                <p id="section-toc.1-1.11.2.4.1"><a href="#appendix-B.4" class="xref">B.4</a>.  <a href="#name-duplicate-instruction-strea" class="xref">Duplicate Instruction, Stream Cancellation</a></p>
+                <p id="section-toc.1-1.11.2.4.1"><a href="#appendix-B.4" class="auto internal xref">B.4</a>.  <a href="#name-duplicate-instruction-strea" class="internal xref">Duplicate Instruction, Stream Cancellation</a></p>
 </li>
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.5">
-                <p id="section-toc.1-1.11.2.5.1"><a href="#appendix-B.5" class="xref">B.5</a>.  <a href="#name-dynamic-table-insert-evicti" class="xref">Dynamic Table Insert, Eviction</a></p>
+                <p id="section-toc.1-1.11.2.5.1"><a href="#appendix-B.5" class="auto internal xref">B.5</a>.  <a href="#name-dynamic-table-insert-evicti" class="internal xref">Dynamic Table Insert, Eviction</a></p>
 </li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
-            <p id="section-toc.1-1.12.1"><a href="#appendix-C" class="xref">Appendix C</a>.  <a href="#name-sample-single-pass-encoding" class="xref">Sample Single-Pass Encoding Algorithm</a></p>
+            <p id="section-toc.1-1.12.1"><a href="#appendix-C" class="auto internal xref">Appendix C</a>.  <a href="#name-sample-one-pass-encoding-al" class="internal xref">Sample One Pass Encoding Algorithm</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
-            <p id="section-toc.1-1.13.1"><a href="#appendix-D" class="xref"></a><a href="#name-acknowledgments" class="xref">Acknowledgments</a></p>
+            <p id="section-toc.1-1.13.1"><a href="#appendix-D" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
-            <p id="section-toc.1-1.14.1"><a href="#appendix-E" class="xref"></a><a href="#name-authors-addresses" class="xref">Authors' Addresses</a></p>
+            <p id="section-toc.1-1.14.1"><a href="#appendix-E" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
 </li>
         </ul>
 </nav>
@@ -1383,10 +1385,10 @@ HPACK compression that seeks to reduce head-of-line blocking.<a href="#section-a
       <h2 id="name-introduction">
 <a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
       </h2>
-<p id="section-1-1">The QUIC transport protocol (<span>[<a href="#QUIC-TRANSPORT" class="xref">QUIC-TRANSPORT</a>]</span>) is designed to support
-HTTP semantics, and its design subsumes many of the features of HTTP/2
-(<span>[<a href="#RFC9113" class="xref">RFC9113</a>]</span>). HTTP/2 uses HPACK (<span>[<a href="#RFC7541" class="xref">RFC7541</a>]</span>) for compression of the header
-and trailer sections.  If HPACK were used for HTTP/3 (<span>[<a href="#RFC9114" class="xref">RFC9114</a>]</span>), it would
+<p id="section-1-1">The QUIC transport protocol (<span>[<a href="#QUIC-TRANSPORT" class="cite xref">QUIC-TRANSPORT</a>]</span>) is designed to support HTTP
+semantics, and its design subsumes many of the features of HTTP/2
+(<span>[<a href="#RFC7540" class="cite xref">RFC7540</a>]</span>). HTTP/2 uses HPACK (<span>[<a href="#RFC7541" class="cite xref">RFC7541</a>]</span>) for compression of the header
+and trailer sections.  If HPACK were used for HTTP/3 (<span>[<a href="#HTTP3" class="cite xref">HTTP3</a>]</span>), it would
 induce head-of-line blocking for field sections due to built-in assumptions of a
 total ordering across frames on all streams.<a href="#section-1-1" class="pilcrow">¶</a></p>
 <p id="section-1-2">QPACK reuses core concepts from HPACK, but is redesigned to allow correctness in
@@ -1399,11 +1401,11 @@ with substantially less head-of-line blocking under the same loss conditions.<a 
         <h3 id="name-conventions-and-definitions">
 <a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
         </h3>
-<p id="section-1.1-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>",
-"<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>", "<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this
-document are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="xref">RFC8174</a>]</span>
+<p id="section-1.1-1">The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
+document are to be interpreted as described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span>
 when, and only when, they appear in all capitals, as shown here.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
-<p id="section-1.1-2">The following terms are used in this document:<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">Definitions of terms that are used in this document:<a href="#section-1.1-2" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-1.1-3">
           <dt id="section-1.1-3.1">HTTP fields:</dt>
           <dd style="margin-left: 1.5em" id="section-1.1-3.2">
@@ -1415,7 +1417,7 @@ for generality.<a href="#section-1.1-3.2.1" class="pilcrow">¶</a></p>
           <dd class="break"></dd>
 <dt id="section-1.1-3.3">HTTP field line:</dt>
           <dd style="margin-left: 1.5em" id="section-1.1-3.4">
-            <p id="section-1.1-3.4.1">A name-value pair sent as part of an HTTP field section. See Sections <a href="https://rfc-editor.org/rfc/rfc9110#section-6.3" class="relref">6.3</a> and <a href="https://rfc-editor.org/rfc/rfc9110#section-6.5" class="relref">6.5</a> of <span>[<a href="#RFC9110" class="xref">RFC9110</a>]</span>.<a href="#section-1.1-3.4.1" class="pilcrow">¶</a></p>
+            <p id="section-1.1-3.4.1">A name-value pair sent as part of an HTTP field section. See Sections <a href="https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-semantics-19#section-6.3" class="relref">6.3</a> and <a href="https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-semantics-19#section-6.5" class="relref">6.5</a> of <span>[<a href="#SEMANTICS" class="cite xref">SEMANTICS</a>]</span>.<a href="#section-1.1-3.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
 <dt id="section-1.1-3.5">HTTP field value:</dt>
@@ -1456,7 +1458,7 @@ dynamic and static tables.<a href="#section-1.1-3.10.1" class="pilcrow">¶</a></
           <dd class="break"></dd>
 <dt id="section-1.1-3.17">Base:</dt>
           <dd style="margin-left: 1.5em" id="section-1.1-3.18">
-            <p id="section-1.1-3.18.1">A reference point for relative and post-Base indices.  Representations that
+            <p id="section-1.1-3.18.1">A reference point for relative and post-base indices.  Representations that
 reference dynamic table entries are relative to a Base.<a href="#section-1.1-3.18.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
@@ -1466,7 +1468,7 @@ reference dynamic table entries are relative to a Base.<a href="#section-1.1-3.1
 </dd>
         <dd class="break"></dd>
 </dl>
-<p id="section-1.1-4">Note that QPACK is a name, not an abbreviation.<a href="#section-1.1-4" class="pilcrow">¶</a></p>
+<p id="section-1.1-4">QPACK is a name, not an acronym.<a href="#section-1.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="notational-conventions">
@@ -1474,22 +1476,23 @@ reference dynamic table entries are relative to a Base.<a href="#section-1.1-3.1
         <h3 id="name-notational-conventions">
 <a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-notational-conventions" class="section-name selfRef">Notational Conventions</a>
         </h3>
-<p id="section-1.2-1">Diagrams in this document use the format described in <span><a href="https://rfc-editor.org/rfc/rfc2360#section-3.1" class="relref">Section 3.1</a> of [<a href="#RFC2360" class="xref">RFC2360</a>]</span>, with the following additional conventions:<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+<p id="section-1.2-1">Diagrams use the format described in <span><a href="https://rfc-editor.org/rfc/rfc2360#section-3.1" class="relref">Section 3.1</a> of [<a href="#RFC2360" class="cite xref">RFC2360</a>]</span>, with the
+following additional conventions:<a href="#section-1.2-1" class="pilcrow">¶</a></p>
 <span class="break"></span><dl class="dlParallel" id="section-1.2-2">
           <dt id="section-1.2-2.1">x (A)</dt>
           <dd style="margin-left: 1.5em" id="section-1.2-2.2">
-            <p id="section-1.2-2.2.1">Indicates that x is A bits long.<a href="#section-1.2-2.2.1" class="pilcrow">¶</a></p>
+            <p id="section-1.2-2.2.1">Indicates that x is A bits long<a href="#section-1.2-2.2.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
 <dt id="section-1.2-2.3">x (A+)</dt>
           <dd style="margin-left: 1.5em" id="section-1.2-2.4">
             <p id="section-1.2-2.4.1">Indicates that x uses the prefixed integer encoding defined in
-<a href="#prefixed-integers" class="xref">Section 4.1.1</a>, beginning with an A-bit prefix.<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
+<a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>, beginning with an A-bit prefix.<a href="#section-1.2-2.4.1" class="pilcrow">¶</a></p>
 </dd>
           <dd class="break"></dd>
 <dt id="section-1.2-2.5">x ...</dt>
           <dd style="margin-left: 1.5em" id="section-1.2-2.6">
-            <p id="section-1.2-2.6.1">Indicates that x is variable length and extends to the end of the region.<a href="#section-1.2-2.6.1" class="pilcrow">¶</a></p>
+            <p id="section-1.2-2.6.1">Indicates that x is variable-length and extends to the end of the region.<a href="#section-1.2-2.6.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 </dl>
@@ -1503,9 +1506,9 @@ reference dynamic table entries are relative to a Base.<a href="#section-1.1-3.1
 <a href="#section-2" class="section-number selfRef">2. </a><a href="#name-compression-process-overvie" class="section-name selfRef">Compression Process Overview</a>
       </h2>
 <p id="section-2-1">Like HPACK, QPACK uses two tables for associating field lines ("headers") to
-indices.  The static table (<a href="#header-table-static" class="xref">Section 3.1</a>) is predefined and contains
+indices.  The static table (<a href="#header-table-static" class="auto internal xref">Section 3.1</a>) is predefined and contains
 common header field lines (some of them with an empty value).  The dynamic table
-(<a href="#header-table-dynamic" class="xref">Section 3.2</a>) is built up over the course of the connection and can
+(<a href="#header-table-dynamic" class="auto internal xref">Section 3.2</a>) is built up over the course of the connection and can
 be used by the encoder to index both header and trailer field lines in the
 encoded field sections.<a href="#section-2-1" class="pilcrow">¶</a></p>
 <p id="section-2-2">QPACK defines unidirectional streams for sending instructions from encoder to
@@ -1517,20 +1520,20 @@ decoder and vice versa.<a href="#section-2-2" class="pilcrow">¶</a></p>
         </h3>
 <p id="section-2.1-1">An encoder converts a header or trailer section into a series of representations
 by emitting either an indexed or a literal representation for each field line in
-the list; see <a href="#field-line-representations" class="xref">Section 4.5</a>.  Indexed representations achieve
+the list; see <a href="#field-line-representations" class="auto internal xref">Section 4.5</a>.  Indexed representations achieve
 high compression by replacing the literal name and possibly the value with an
 index to either the static or dynamic table.  References to the static table and
 literal representations do not require any dynamic state and never risk
 head-of-line blocking.  References to the dynamic table risk head-of-line
 blocking if the encoder has not received an acknowledgment indicating the entry
 is available at the decoder.<a href="#section-2.1-1" class="pilcrow">¶</a></p>
-<p id="section-2.1-2">An encoder <span class="bcp14">MAY</span> insert any entry in the dynamic table it chooses; it is not
+<p id="section-2.1-2">An encoder MAY insert any entry in the dynamic table it chooses; it is not
 limited to field lines it is compressing.<a href="#section-2.1-2" class="pilcrow">¶</a></p>
 <p id="section-2.1-3">QPACK preserves the ordering of field lines within each field section.  An
-encoder <span class="bcp14">MUST</span> emit field representations in the order they appear in the input
+encoder MUST emit field representations in the order they appear in the input
 field section.<a href="#section-2.1-3" class="pilcrow">¶</a></p>
-<p id="section-2.1-4">QPACK is designed to place the burden of optional state tracking on the encoder,
-resulting in relatively simple decoders.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
+<p id="section-2.1-4">QPACK is designed to contain the more complex state tracking to the encoder,
+while the decoder is relatively simple.<a href="#section-2.1-4" class="pilcrow">¶</a></p>
 <div id="blocked-insertion">
 <section id="section-2.1.1">
           <h4 id="name-limits-on-dynamic-table-ins">
@@ -1547,11 +1550,11 @@ because those references are guaranteed to be processed before the instruction
 evicting the entry.<a href="#section-2.1.1-2" class="pilcrow">¶</a></p>
 <p id="section-2.1.1-3">If the dynamic table does not contain enough room for a new entry without
 evicting other entries, and the entries that would be evicted are not
-evictable, the encoder <span class="bcp14">MUST NOT</span> insert that entry into the dynamic table
+evictable, the encoder MUST NOT insert that entry into the dynamic table
 (including duplicates of existing entries). In order to avoid this, an encoder
 that uses the dynamic table has to keep track of each dynamic table entry
 referenced by each field section until those representations are acknowledged by
-the decoder; see <a href="#header-acknowledgment" class="xref">Section 4.4.1</a>.<a href="#section-2.1.1-3" class="pilcrow">¶</a></p>
+the decoder; see <a href="#header-acknowledgment" class="auto internal xref">Section 4.4.1</a>.<a href="#section-2.1.1-3" class="pilcrow">¶</a></p>
 <div id="avoiding-prohibited-insertions">
 <section id="section-2.1.1.1">
             <h5 id="name-avoiding-prohibited-inserti">
@@ -1560,12 +1563,12 @@ the decoder; see <a href="#header-acknowledgment" class="xref">Section 4.4.1</a>
 <p id="section-2.1.1.1-1">To ensure that the encoder is not prevented from adding new entries, the encoder
 can avoid referencing entries that are close to eviction.  Rather than
 reference such an entry, the encoder can emit a Duplicate instruction
-(<a href="#duplicate" class="xref">Section 4.3.4</a>) and reference the duplicate instead.<a href="#section-2.1.1.1-1" class="pilcrow">¶</a></p>
+(<a href="#duplicate" class="auto internal xref">Section 4.3.4</a>), and reference the duplicate instead.<a href="#section-2.1.1.1-1" class="pilcrow">¶</a></p>
 <p id="section-2.1.1.1-2">Determining which entries are too close to eviction to reference is an encoder
 preference.  One heuristic is to target a fixed amount of available space in the
 dynamic table: either unused space or space that can be reclaimed by evicting
 non-blocking entries.  To achieve this, the encoder can maintain a draining
-index, which is the smallest absolute index (<a href="#indexing" class="xref">Section 3.2.4</a>) in the dynamic table
+index, which is the smallest absolute index (<a href="#indexing" class="auto internal xref">Section 3.2.4</a>) in the dynamic table
 that it will emit a reference for.  As new entries are inserted, the encoder
 increases the draining index to maintain the section of the table that it will
 not reference.  If the encoder does not create new references to entries with an
@@ -1574,7 +1577,7 @@ references to those entries will eventually become zero, allowing them to be
 evicted.<a href="#section-2.1.1.1-2" class="pilcrow">¶</a></p>
 <span id="name-draining-dynamic-table-entr"></span><div id="fig-draining-index">
 <figure id="figure-1">
-              <div class="alignLeft art-ascii-art art-text artwork" id="section-2.1.1.1-3.1">
+              <div class="lang-drawing sourcecode" id="section-2.1.1.1-3.1">
 <pre>
              &lt;-- Newer Entries          Older Entries --&gt;
                (Larger Indicies)      (Smaller Indicies)
@@ -1604,50 +1607,50 @@ evicted.<a href="#section-2.1.1.1-2" class="pilcrow">¶</a></p>
 <p id="section-2.1.2-1">Because QUIC does not guarantee order between data on different streams, a
 decoder might encounter a representation that references a dynamic table entry
 that it has not yet received.<a href="#section-2.1.2-1" class="pilcrow">¶</a></p>
-<p id="section-2.1.2-2">Each encoded field section contains a Required Insert Count (<a href="#header-prefix" class="xref">Section 4.5.1</a>),
+<p id="section-2.1.2-2">Each encoded field section contains a Required Insert Count (<a href="#header-prefix" class="auto internal xref">Section 4.5.1</a>),
 the lowest possible value for the Insert Count with which the field section can
 be decoded. For a field section encoded using references to the dynamic table,
 the Required Insert Count is one larger than the largest absolute index of all
 referenced dynamic table entries. For a field section encoded with no references
 to the dynamic table, the Required Insert Count is zero.<a href="#section-2.1.2-2" class="pilcrow">¶</a></p>
 <p id="section-2.1.2-3">When the decoder receives an encoded field section with a Required Insert Count
-greater than its own Insert Count, the stream cannot be processed immediately
-and is considered "blocked"; see <a href="#blocked-decoding" class="xref">Section 2.2.1</a>.<a href="#section-2.1.2-3" class="pilcrow">¶</a></p>
+greater than its own Insert Count, the stream cannot be processed immediately,
+and is considered "blocked"; see <a href="#blocked-decoding" class="auto internal xref">Section 2.2.1</a>.<a href="#section-2.1.2-3" class="pilcrow">¶</a></p>
 <p id="section-2.1.2-4">The decoder specifies an upper bound on the number of streams that can be
-blocked using the SETTINGS_QPACK_BLOCKED_STREAMS setting; see <a href="#configuration" class="xref">Section 5</a>.
-An encoder <span class="bcp14">MUST</span> limit the number of streams that could become blocked to the
+blocked using the SETTINGS_QPACK_BLOCKED_STREAMS setting; see <a href="#configuration" class="auto internal xref">Section 5</a>.
+An encoder MUST limit the number of streams that could become blocked to the
 value of SETTINGS_QPACK_BLOCKED_STREAMS at all times. If a decoder encounters
-more blocked streams than it promised to support, it <span class="bcp14">MUST</span> treat this as a
+more blocked streams than it promised to support, it MUST treat this as a
 connection error of type QPACK_DECOMPRESSION_FAILED.<a href="#section-2.1.2-4" class="pilcrow">¶</a></p>
 <p id="section-2.1.2-5">Note that the decoder might not become blocked on every stream that risks
 becoming blocked.<a href="#section-2.1.2-5" class="pilcrow">¶</a></p>
 <p id="section-2.1.2-6">An encoder can decide whether to risk having a stream become blocked. If
 permitted by the value of SETTINGS_QPACK_BLOCKED_STREAMS, compression efficiency
 can often be improved by referencing dynamic table entries that are still in
-transit, but if there is loss or reordering, the stream can become blocked at
-the decoder.  An encoder can avoid the risk of blocking by only referencing
-dynamic table entries that have been acknowledged, but this could mean using
-literals. Since literals make the encoded field section larger, this can result
-in the encoder becoming blocked on congestion or flow-control limits.<a href="#section-2.1.2-6" class="pilcrow">¶</a></p>
+transit, but if there is loss or reordering the stream can become blocked at the
+decoder.  An encoder can avoid the risk of blocking by only referencing dynamic
+table entries that have been acknowledged, but this could mean using literals.
+Since literals make the encoded field section larger, this can result in the
+encoder becoming blocked on congestion or flow control limits.<a href="#section-2.1.2-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="avoiding-flow-control-deadlocks">
 <section id="section-2.1.3">
           <h4 id="name-avoiding-flow-control-deadl">
-<a href="#section-2.1.3" class="section-number selfRef">2.1.3. </a><a href="#name-avoiding-flow-control-deadl" class="section-name selfRef">Avoiding Flow-Control Deadlocks</a>
+<a href="#section-2.1.3" class="section-number selfRef">2.1.3. </a><a href="#name-avoiding-flow-control-deadl" class="section-name selfRef">Avoiding Flow Control Deadlocks</a>
           </h4>
 <p id="section-2.1.3-1">Writing instructions on streams that are limited by flow control can produce
 deadlocks.<a href="#section-2.1.3-1" class="pilcrow">¶</a></p>
-<p id="section-2.1.3-2">A decoder might stop issuing flow-control credit on the stream that carries an
+<p id="section-2.1.3-2">A decoder might stop issuing flow control credit on the stream that carries an
 encoded field section until the necessary updates are received on the encoder
-stream. If the granting of flow-control credit on the encoder stream (or the
+stream. If the granting of flow control credit on the encoder stream (or the
 connection as a whole) depends on the consumption and release of data on the
 stream carrying the encoded field section, a deadlock might result.<a href="#section-2.1.3-2" class="pilcrow">¶</a></p>
 <p id="section-2.1.3-3">More generally, a stream containing a large instruction can become deadlocked if
-the decoder withholds flow-control credit until the instruction is completely
+the decoder withholds flow control credit until the instruction is completely
 received.<a href="#section-2.1.3-3" class="pilcrow">¶</a></p>
-<p id="section-2.1.3-4">To avoid these deadlocks, an encoder <span class="bcp14">SHOULD NOT</span> write an instruction unless
-sufficient stream and connection flow-control credit is available for the entire
+<p id="section-2.1.3-4">To avoid these deadlocks, an encoder SHOULD NOT write an instruction unless
+sufficient stream and connection flow control credit is available for the entire
 instruction.<a href="#section-2.1.3-4" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -1661,13 +1664,13 @@ duplications acknowledged by the decoder.  The encoder tracks the Known Received
 Count in order to identify which dynamic table entries can be referenced without
 potentially blocking a stream.  The decoder tracks the Known Received Count in
 order to be able to send Insert Count Increment instructions.<a href="#section-2.1.4-1" class="pilcrow">¶</a></p>
-<p id="section-2.1.4-2">A Section Acknowledgment instruction (<a href="#header-acknowledgment" class="xref">Section 4.4.1</a>) implies that
+<p id="section-2.1.4-2">A Section Acknowledgment instruction (<a href="#header-acknowledgment" class="auto internal xref">Section 4.4.1</a>) implies that
 the decoder has received all dynamic table state necessary to decode the field
 section.  If the Required Insert Count of the acknowledged field section is
-greater than the current Known Received Count, the Known Received Count is
-updated to that Required Insert Count value.<a href="#section-2.1.4-2" class="pilcrow">¶</a></p>
-<p id="section-2.1.4-3">An Insert Count Increment instruction (<a href="#insert-count-increment" class="xref">Section 4.4.3</a>) increases the
-Known Received Count by its Increment parameter.  See <a href="#new-table-entries" class="xref">Section 2.2.2.3</a> for
+greater than the current Known Received Count, Known Received Count is updated
+to that Required Insert Count value.<a href="#section-2.1.4-2" class="pilcrow">¶</a></p>
+<p id="section-2.1.4-3">An Insert Count Increment instruction (<a href="#insert-count-increment" class="auto internal xref">Section 4.4.3</a>) increases the
+Known Received Count by its Increment parameter.  See <a href="#new-table-entries" class="auto internal xref">Section 2.2.2.3</a> for
 guidance.<a href="#section-2.1.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -1685,7 +1688,7 @@ and encoder stream instructions arrive on separate streams.  This is unlike
 HPACK, where encoded field sections (header blocks) can contain instructions
 that modify the dynamic table, and there is no dedicated stream of HPACK
 instructions.<a href="#section-2.2-1" class="pilcrow">¶</a></p>
-<p id="section-2.2-2">The decoder <span class="bcp14">MUST</span> emit field lines in the order their representations appear in
+<p id="section-2.2-2">The decoder MUST emit field lines in the order their representations appear in
 the encoded field section.<a href="#section-2.2-2" class="pilcrow">¶</a></p>
 <div id="blocked-decoding">
 <section id="section-2.2.1">
@@ -1696,19 +1699,19 @@ the encoded field section.<a href="#section-2.2-2" class="pilcrow">¶</a></p>
 Insert Count. When the Required Insert Count is less than or equal to the
 decoder's Insert Count, the field section can be processed immediately.
 Otherwise, the stream on which the field section was received becomes blocked.<a href="#section-2.2.1-1" class="pilcrow">¶</a></p>
-<p id="section-2.2.1-2">While blocked, encoded field section data <span class="bcp14">SHOULD</span> remain in the blocked stream's
-flow-control window. This data is unusable until the stream becomes unblocked,
+<p id="section-2.2.1-2">While blocked, encoded field section data SHOULD remain in the blocked stream's
+flow control window. This data is unusable until the stream becomes unblocked,
 and releasing the flow control prematurely makes the decoder vulnerable to
 memory exhaustion attacks. A stream becomes unblocked when the Insert Count
 becomes greater than or equal to the Required Insert Count for all encoded
 field sections the decoder has started reading from the stream.<a href="#section-2.2.1-2" class="pilcrow">¶</a></p>
 <p id="section-2.2.1-3">When processing encoded field sections, the decoder expects the Required Insert
 Count to equal the lowest possible value for the Insert Count with which the
-field section can be decoded, as prescribed in <a href="#blocked-streams" class="xref">Section 2.1.2</a>. If it
-encounters a Required Insert Count smaller than expected, it <span class="bcp14">MUST</span> treat this as
+field section can be decoded, as prescribed in <a href="#blocked-streams" class="auto internal xref">Section 2.1.2</a>. If it
+encounters a Required Insert Count smaller than expected, it MUST treat this as
 a connection error of type QPACK_DECOMPRESSION_FAILED; see
-<a href="#invalid-references" class="xref">Section 2.2.3</a>. If it encounters a Required Insert Count larger than
-expected, it <span class="bcp14">MAY</span> treat this as a connection error of type
+<a href="#invalid-references" class="auto internal xref">Section 2.2.3</a>. If it encounters a Required Insert Count larger than
+expected, it MAY treat this as a connection error of type
 QPACK_DECOMPRESSION_FAILED.<a href="#section-2.2.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -1718,15 +1721,15 @@ QPACK_DECOMPRESSION_FAILED.<a href="#section-2.2.1-3" class="pilcrow">¶</a></p>
 <a href="#section-2.2.2" class="section-number selfRef">2.2.2. </a><a href="#name-state-synchronization" class="section-name selfRef">State Synchronization</a>
           </h4>
 <p id="section-2.2.2-1">The decoder signals the following events by emitting decoder instructions
-(<a href="#decoder-instructions" class="xref">Section 4.4</a>) on the decoder stream.<a href="#section-2.2.2-1" class="pilcrow">¶</a></p>
+(<a href="#decoder-instructions" class="auto internal xref">Section 4.4</a>) on the decoder stream.<a href="#section-2.2.2-1" class="pilcrow">¶</a></p>
 <div id="completed-processing-of-a-field-section">
 <section id="section-2.2.2.1">
             <h5 id="name-completed-processing-of-a-f">
 <a href="#section-2.2.2.1" class="section-number selfRef">2.2.2.1. </a><a href="#name-completed-processing-of-a-f" class="section-name selfRef">Completed Processing of a Field Section</a>
             </h5>
 <p id="section-2.2.2.1-1">After the decoder finishes decoding a field section encoded using
-representations containing dynamic table references, it <span class="bcp14">MUST</span> emit a Section
-Acknowledgment instruction (<a href="#header-acknowledgment" class="xref">Section 4.4.1</a>).  A stream may carry
+representations containing dynamic table references, it MUST emit a Section
+Acknowledgment instruction (<a href="#header-acknowledgment" class="auto internal xref">Section 4.4.1</a>).  A stream may carry
 multiple field sections in the case of intermediate responses, trailers, and
 pushed requests.  The encoder interprets each Section Acknowledgment
 instruction as acknowledging the earliest unacknowledged field section
@@ -1741,16 +1744,16 @@ containing dynamic table references sent on the given stream.<a href="#section-2
 <p id="section-2.2.2.2-1">When an endpoint receives a stream reset before the end of a stream or before
 all encoded field sections are processed on that stream, or when it abandons
 reading of a stream, it generates a Stream Cancellation instruction; see
-<a href="#stream-cancellation" class="xref">Section 4.4.2</a>.  This signals to the encoder that all references to the
+<a href="#stream-cancellation" class="auto internal xref">Section 4.4.2</a>.  This signals to the encoder that all references to the
 dynamic table on that stream are no longer outstanding.  A decoder with a
-maximum dynamic table capacity (<a href="#maximum-dynamic-table-capacity" class="xref">Section 3.2.3</a>) equal to
-zero <span class="bcp14">MAY</span> omit sending Stream Cancellations, because the encoder cannot have any
+maximum dynamic table capacity (<a href="#maximum-dynamic-table-capacity" class="auto internal xref">Section 3.2.3</a>) equal to
+zero MAY omit sending Stream Cancellations, because the encoder cannot have any
 dynamic table references.  An encoder cannot infer from this instruction that
 any updates to the dynamic table have been received.<a href="#section-2.2.2.2-1" class="pilcrow">¶</a></p>
 <p id="section-2.2.2.2-2">The Section Acknowledgment and Stream Cancellation instructions permit the
 encoder to remove references to entries in the dynamic table.  When an entry
-with an absolute index lower than the Known Received Count has zero references,
-then it is considered evictable; see <a href="#blocked-insertion" class="xref">Section 2.1.1</a>.<a href="#section-2.2.2.2-2" class="pilcrow">¶</a></p>
+with absolute index lower than the Known Received Count has zero references,
+then it is considered evictable; see <a href="#blocked-insertion" class="auto internal xref">Section 2.1.1</a>.<a href="#section-2.2.2.2-2" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="new-table-entries">
@@ -1760,12 +1763,12 @@ then it is considered evictable; see <a href="#blocked-insertion" class="xref">S
             </h5>
 <p id="section-2.2.2.3-1">After receiving new table entries on the encoder stream, the decoder chooses
 when to emit Insert Count Increment instructions; see
-<a href="#insert-count-increment" class="xref">Section 4.4.3</a>. Emitting this instruction after adding each new
+<a href="#insert-count-increment" class="auto internal xref">Section 4.4.3</a>. Emitting this instruction after adding each new
 dynamic table entry will provide the timeliest feedback to the encoder, but
 could be redundant with other decoder feedback. By delaying an Insert Count
 Increment instruction, the decoder might be able to coalesce multiple Insert
-Count Increment instructions or replace them entirely with Section
-Acknowledgments; see <a href="#header-acknowledgment" class="xref">Section 4.4.1</a>. However, delaying too long
+Count Increment instructions, or replace them entirely with Section
+Acknowledgments; see <a href="#header-acknowledgment" class="auto internal xref">Section 4.4.1</a>. However, delaying too long
 may lead to compression inefficiencies if the encoder waits for an entry to be
 acknowledged before using it.<a href="#section-2.2.2.3-1" class="pilcrow">¶</a></p>
 </section>
@@ -1780,10 +1783,10 @@ acknowledged before using it.<a href="#section-2.2.2.3-1" class="pilcrow">¶</a>
 <p id="section-2.2.3-1">If the decoder encounters a reference in a field line representation to a
 dynamic table entry that has already been evicted or that has an absolute
 index greater than or equal to the declared Required Insert Count
-(<a href="#header-prefix" class="xref">Section 4.5.1</a>), it <span class="bcp14">MUST</span> treat this as a connection error of type
+(<a href="#header-prefix" class="auto internal xref">Section 4.5.1</a>), it MUST treat this as a connection error of type
 QPACK_DECOMPRESSION_FAILED.<a href="#section-2.2.3-1" class="pilcrow">¶</a></p>
 <p id="section-2.2.3-2">If the decoder encounters a reference in an encoder instruction to a dynamic
-table entry that has already been evicted, it <span class="bcp14">MUST</span> treat this as a connection
+table entry that has already been evicted, it MUST treat this as a connection
 error of type QPACK_ENCODER_STREAM_ERROR.<a href="#section-2.2.3-2" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -1805,16 +1808,16 @@ addressed.<a href="#section-3-1" class="pilcrow">¶</a></p>
 <a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-static-table" class="section-name selfRef">Static Table</a>
         </h3>
 <p id="section-3.1-1">The static table consists of a predefined list of field lines, each of which has
-a fixed index over time.  Its entries are defined in <a href="#static-table" class="xref">Appendix A</a>.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+a fixed index over time.  Its entries are defined in <a href="#static-table" class="auto internal xref">Appendix A</a>.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
 <p id="section-3.1-2">All entries in the static table have a name and a value.  However, values can be
 empty (that is, have a length of 0).  Each entry is identified by a unique
 index.<a href="#section-3.1-2" class="pilcrow">¶</a></p>
 <p id="section-3.1-3">Note that the QPACK static table is indexed from 0, whereas the HPACK static
 table is indexed from 1.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
 <p id="section-3.1-4">When the decoder encounters an invalid static table index in a field line
-representation, it <span class="bcp14">MUST</span> treat this as a connection error of type
+representation it MUST treat this as a connection error of type
 QPACK_DECOMPRESSION_FAILED.  If this index is received on the encoder stream,
-this <span class="bcp14">MUST</span> be treated as a connection error of type QPACK_ENCODER_STREAM_ERROR.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+this MUST be treated as a connection error of type QPACK_ENCODER_STREAM_ERROR.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="header-table-dynamic">
@@ -1826,9 +1829,9 @@ this <span class="bcp14">MUST</span> be treated as a connection error of type QP
 first-out order.  A QPACK encoder and decoder share a dynamic table that is
 initially empty.  The encoder adds entries to the dynamic table and sends them
 to the decoder via instructions on the encoder stream; see
-<a href="#encoder-instructions" class="xref">Section 4.3</a>.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<a href="#encoder-instructions" class="auto internal xref">Section 4.3</a>.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
 <p id="section-3.2-2">The dynamic table can contain duplicate entries (i.e., entries with the same
-name and same value).  Therefore, duplicate entries <span class="bcp14">MUST NOT</span> be treated as an
+name and same value).  Therefore, duplicate entries MUST NOT be treated as an
 error by the decoder.<a href="#section-3.2-2" class="pilcrow">¶</a></p>
 <p id="section-3.2-3">Dynamic table entries can have empty values.<a href="#section-3.2-3" class="pilcrow">¶</a></p>
 <div id="dynamic-table-size">
@@ -1850,22 +1853,22 @@ using the length of its name and value without Huffman encoding applied.<a href=
 <p id="section-3.2.2-1">The encoder sets the capacity of the dynamic table, which serves as the upper
 limit on its size.  The initial capacity of the dynamic table is zero.  The
 encoder sends a Set Dynamic Table Capacity instruction
-(<a href="#set-dynamic-capacity" class="xref">Section 4.3.1</a>) with a non-zero capacity to begin using the dynamic
+(<a href="#set-dynamic-capacity" class="auto internal xref">Section 4.3.1</a>) with a non-zero capacity to begin using the dynamic
 table.<a href="#section-3.2.2-1" class="pilcrow">¶</a></p>
 <p id="section-3.2.2-2">Before a new entry is added to the dynamic table, entries are evicted from the
 end of the dynamic table until the size of the dynamic table is less than or
-equal to (table capacity - size of new entry). The encoder <span class="bcp14">MUST NOT</span> cause a
+equal to (table capacity - size of new entry). The encoder MUST NOT cause a
 dynamic table entry to be evicted unless that entry is evictable; see
-<a href="#blocked-insertion" class="xref">Section 2.1.1</a>.  The new entry is then added to the table.  It is an
+<a href="#blocked-insertion" class="auto internal xref">Section 2.1.1</a>.  The new entry is then added to the table.  It is an
 error if the encoder attempts to add an entry that is larger than the dynamic
-table capacity; the decoder <span class="bcp14">MUST</span> treat this as a connection error of type
+table capacity; the decoder MUST treat this as a connection error of type
 QPACK_ENCODER_STREAM_ERROR.<a href="#section-3.2.2-2" class="pilcrow">¶</a></p>
 <p id="section-3.2.2-3">A new entry can reference an entry in the dynamic table that will be evicted
 when adding this new entry into the dynamic table.  Implementations are
 cautioned to avoid deleting the referenced name or value if the referenced entry
 is evicted from the dynamic table prior to inserting the new entry.<a href="#section-3.2.2-3" class="pilcrow">¶</a></p>
 <p id="section-3.2.2-4">Whenever the dynamic table capacity is reduced by the encoder
-(<a href="#set-dynamic-capacity" class="xref">Section 4.3.1</a>), entries are evicted from the end of the dynamic
+(<a href="#set-dynamic-capacity" class="auto internal xref">Section 4.3.1</a>), entries are evicted from the end of the dynamic
 table until the size of the dynamic table is less than or equal to the new table
 capacity.  This mechanism can be used to completely clear entries from the
 dynamic table by setting a capacity of 0, which can subsequently be restored.<a href="#section-3.2.2-4" class="pilcrow">¶</a></p>
@@ -1879,25 +1882,24 @@ dynamic table by setting a capacity of 0, which can subsequently be restored.<a 
 <p id="section-3.2.3-1">To bound the memory requirements of the decoder, the decoder limits the maximum
 value the encoder is permitted to set for the dynamic table capacity.  In
 HTTP/3, this limit is determined by the value of
-SETTINGS_QPACK_MAX_TABLE_CAPACITY sent by the decoder; see <a href="#configuration" class="xref">Section 5</a>.
-The encoder <span class="bcp14">MUST NOT</span> set a dynamic table capacity that exceeds this maximum, but
+SETTINGS_QPACK_MAX_TABLE_CAPACITY sent by the decoder; see <a href="#configuration" class="auto internal xref">Section 5</a>.
+The encoder MUST NOT set a dynamic table capacity that exceeds this maximum, but
 it can choose to use a lower dynamic table capacity; see
-<a href="#set-dynamic-capacity" class="xref">Section 4.3.1</a>.<a href="#section-3.2.3-1" class="pilcrow">¶</a></p>
+<a href="#set-dynamic-capacity" class="auto internal xref">Section 4.3.1</a>.<a href="#section-3.2.3-1" class="pilcrow">¶</a></p>
 <p id="section-3.2.3-2">For clients using 0-RTT data in HTTP/3, the server's maximum table capacity is
-the remembered value of the setting or zero if the value was not previously
-sent.  When the client's 0-RTT value of the SETTING is zero, the server <span class="bcp14">MAY</span> set
+the remembered value of the setting, or zero if the value was not previously
+sent.  When the client's 0-RTT value of the SETTING is zero, the server MAY set
 it to a non-zero value in its SETTINGS frame. If the remembered value is
-non-zero, the server <span class="bcp14">MUST</span> send the same non-zero value in its SETTINGS frame. If
+non-zero, the server MUST send the same non-zero value in its SETTINGS frame. If
 it specifies any other value, or omits SETTINGS_QPACK_MAX_TABLE_CAPACITY from
 SETTINGS, the encoder must treat this as a connection error of type
 QPACK_DECODER_STREAM_ERROR.<a href="#section-3.2.3-2" class="pilcrow">¶</a></p>
-<p id="section-3.2.3-3">For clients not using 0-RTT data (whether 0-RTT is not attempted or is rejected)
-and for all HTTP/3 servers, the maximum table capacity is 0 until the encoder
-processes a SETTINGS frame with a non-zero value of
-SETTINGS_QPACK_MAX_TABLE_CAPACITY.<a href="#section-3.2.3-3" class="pilcrow">¶</a></p>
-<p id="section-3.2.3-4">When the maximum table capacity is zero, the encoder <span class="bcp14">MUST NOT</span> insert entries
-into the dynamic table and <span class="bcp14">MUST NOT</span> send any encoder instructions on the encoder
-stream.<a href="#section-3.2.3-4" class="pilcrow">¶</a></p>
+<p id="section-3.2.3-3">For HTTP/3 servers and HTTP/3 clients when 0-RTT is not attempted or is
+rejected, the maximum table capacity is 0 until the encoder processes a SETTINGS
+frame with a non-zero value of SETTINGS_QPACK_MAX_TABLE_CAPACITY.<a href="#section-3.2.3-3" class="pilcrow">¶</a></p>
+<p id="section-3.2.3-4">When the maximum table capacity is zero, the encoder MUST NOT insert entries
+into the dynamic table, and MUST NOT send any encoder instructions on the
+encoder stream.<a href="#section-3.2.3-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="indexing">
@@ -1918,12 +1920,12 @@ by one with each insertion.<a href="#section-3.2.4-1" class="pilcrow">¶</a></p>
 <p id="section-3.2.5-1">Relative indices begin at zero and increase in the opposite direction from the
 absolute index.  Determining which entry has a relative index of 0 depends on
 the context of the reference.<a href="#section-3.2.5-1" class="pilcrow">¶</a></p>
-<p id="section-3.2.5-2">In encoder instructions (<a href="#encoder-instructions" class="xref">Section 4.3</a>), a relative index of 0
+<p id="section-3.2.5-2">In encoder instructions (<a href="#encoder-instructions" class="auto internal xref">Section 4.3</a>), a relative index of 0
 refers to the most recently inserted value in the dynamic table.  Note that this
 means the entry referenced by a given relative index will change while
 interpreting instructions on the encoder stream.<a href="#section-3.2.5-2" class="pilcrow">¶</a></p>
 <span id="name-example-dynamic-table-index"></span><figure id="figure-2">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-3.2.5-3.1">
+            <div class="lang-drawing sourcecode" id="section-3.2.5-3.1">
 <pre>
       +-----+---------------+-------+
       | n-1 |      ...      |   d   |  Absolute Index
@@ -1943,12 +1945,12 @@ d = count of entries dropped
             </figcaption></figure>
 <p id="section-3.2.5-4">Unlike in encoder instructions, relative indices in field line representations
 are relative to the Base at the beginning of the encoded field section; see
-<a href="#header-prefix" class="xref">Section 4.5.1</a>. This ensures that references are stable even if encoded field
+<a href="#header-prefix" class="auto internal xref">Section 4.5.1</a>. This ensures that references are stable even if encoded field
 sections and dynamic table updates are processed out of order.<a href="#section-3.2.5-4" class="pilcrow">¶</a></p>
 <p id="section-3.2.5-5">In a field line representation, a relative index of 0 refers to the entry with
 absolute index equal to Base - 1.<a href="#section-3.2.5-5" class="pilcrow">¶</a></p>
 <span id="name-example-dynamic-table-indexi"></span><figure id="figure-3">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-3.2.5-6.1">
+            <div class="lang-drawing sourcecode" id="section-3.2.5-6.1">
 <pre>
                Base
                 |
@@ -1976,13 +1978,13 @@ In this example, Base = n - 2
           </h4>
 <p id="section-3.2.6-1">Post-Base indices are used in field line representations for entries with
 absolute indices greater than or equal to Base, starting at 0 for the entry with
-absolute index equal to Base and increasing in the same direction as the
+absolute index equal to Base, and increasing in the same direction as the
 absolute index.<a href="#section-3.2.6-1" class="pilcrow">¶</a></p>
 <p id="section-3.2.6-2">Post-Base indices allow an encoder to process a field section in a single pass
 and include references to entries added while processing this (or other) field
 sections.<a href="#section-3.2.6-2" class="pilcrow">¶</a></p>
 <span id="name-example-dynamic-table-indexin"></span><figure id="figure-4">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-3.2.6-3.1">
+            <div class="lang-drawing sourcecode" id="section-3.2.6-3.1">
 <pre>
                Base
                 |
@@ -2022,10 +2024,10 @@ In this example, Base = n - 2
           <h4 id="name-prefixed-integers">
 <a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-prefixed-integers" class="section-name selfRef">Prefixed Integers</a>
           </h4>
-<p id="section-4.1.1-1">The prefixed integer from <span><a href="https://rfc-editor.org/rfc/rfc7541#section-5.1" class="relref">Section 5.1</a> of [<a href="#RFC7541" class="xref">RFC7541</a>]</span> is used heavily throughout
-this document.  The format from <span>[<a href="#RFC7541" class="xref">RFC7541</a>]</span> is used unmodified.  Note, however,
+<p id="section-4.1.1-1">The prefixed integer from <span><a href="https://rfc-editor.org/rfc/rfc7541#section-5.1" class="relref">Section 5.1</a> of [<a href="#RFC7541" class="cite xref">RFC7541</a>]</span> is used heavily throughout
+this document.  The format from <span>[<a href="#RFC7541" class="cite xref">RFC7541</a>]</span> is used unmodified.  Note, however,
 that QPACK uses some prefix sizes not actually used in HPACK.<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
-<p id="section-4.1.1-2">QPACK implementations <span class="bcp14">MUST</span> be able to decode integers up to and including 62
+<p id="section-4.1.1-2">QPACK implementations MUST be able to decode integers up to and including 62
 bits long.<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -2034,23 +2036,22 @@ bits long.<a href="#section-4.1.1-2" class="pilcrow">¶</a></p>
           <h4 id="name-string-literals">
 <a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-string-literals" class="section-name selfRef">String Literals</a>
           </h4>
-<p id="section-4.1.2-1">The string literal defined by <span><a href="https://rfc-editor.org/rfc/rfc7541#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC7541" class="xref">RFC7541</a>]</span> is also used
+<p id="section-4.1.2-1">The string literal defined by <span><a href="https://rfc-editor.org/rfc/rfc7541#section-5.2" class="relref">Section 5.2</a> of [<a href="#RFC7541" class="cite xref">RFC7541</a>]</span> is also used
 throughout. This string format includes optional Huffman encoding.<a href="#section-4.1.2-1" class="pilcrow">¶</a></p>
 <p id="section-4.1.2-2">HPACK defines string literals to begin on a byte boundary.  They begin with a
 single bit flag, denoted as 'H' in this document (indicating whether the string
-is Huffman encoded), followed by the string length encoded as a 7-bit prefix
-integer, and finally the indicated number of bytes of data. When Huffman
-encoding is enabled, the Huffman table from <span><a href="https://rfc-editor.org/rfc/rfc7541#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC7541" class="xref">RFC7541</a>]</span> is used
-without modification and the indicated length is the size of the string after
-encoding.<a href="#section-4.1.2-2" class="pilcrow">¶</a></p>
+is Huffman-coded), followed by the Length encoded as a 7-bit prefix integer, and
+finally Length bytes of data. When Huffman encoding is enabled, the Huffman
+table from <span><a href="https://rfc-editor.org/rfc/rfc7541#appendix-B" class="relref">Appendix B</a> of [<a href="#RFC7541" class="cite xref">RFC7541</a>]</span> is used without modification and Length
+indicates the size of the string after encoding.<a href="#section-4.1.2-2" class="pilcrow">¶</a></p>
 <p id="section-4.1.2-3">This document expands the definition of string literals by permitting them to
 begin other than on a byte boundary.  An "N-bit prefix string literal" begins
 mid-byte, with the first (8-N) bits allocated to a previous field. The string
-uses one bit for the Huffman flag, followed by the length of the encoded string
-as a (N-1)-bit prefix integer.  The prefix size, N, can have a value between 2
-and 8, inclusive. The remainder of the string literal is unmodified.<a href="#section-4.1.2-3" class="pilcrow">¶</a></p>
+uses one bit for the Huffman flag, followed by the Length encoded as an
+(N-1)-bit prefix integer.  The prefix size, N, can have a value between 2 and 8
+inclusive. The remainder of the string literal is unmodified.<a href="#section-4.1.2-3" class="pilcrow">¶</a></p>
 <p id="section-4.1.2-4">A string literal without a prefix length noted is an 8-bit prefix string literal
-and follows the definitions in <span>[<a href="#RFC7541" class="xref">RFC7541</a>]</span> without modification.<a href="#section-4.1.2-4" class="pilcrow">¶</a></p>
+and follows the definitions in <span>[<a href="#RFC7541" class="cite xref">RFC7541</a>]</span> without modification.<a href="#section-4.1.2-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2071,20 +2072,18 @@ It carries an unframed sequence of decoder instructions from decoder
 to encoder.<a href="#section-4.2-2.2" class="pilcrow">¶</a>
 </li>
         </ul>
-<p id="section-4.2-3">HTTP/3 endpoints contain a QPACK encoder and decoder. Each endpoint <span class="bcp14">MUST</span>
-initiate, at most, one encoder stream and, at most, one decoder stream. Receipt
-of a second instance of either stream type <span class="bcp14">MUST</span> be treated as a connection error
-of type H3_STREAM_CREATION_ERROR.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
-<p id="section-4.2-4">The sender <span class="bcp14">MUST NOT</span> close either of these streams, and the receiver <span class="bcp14">MUST NOT</span>
-request that the sender close either of these streams. Closure of either
-unidirectional stream type <span class="bcp14">MUST</span> be treated as a connection error of type
-H3_CLOSED_CRITICAL_STREAM.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
-<p id="section-4.2-5">An endpoint <span class="bcp14">MAY</span> avoid creating an encoder stream if it will not be used (for
-example, if its encoder does not wish to use the dynamic table or if the maximum
+<p id="section-4.2-3">HTTP/3 endpoints contain a QPACK encoder and decoder. Each endpoint MUST
+initiate at most one encoder stream and at most one decoder stream. Receipt of a
+second instance of either stream type MUST be treated as a connection error of
+type H3_STREAM_CREATION_ERROR.<a href="#section-4.2-3" class="pilcrow">¶</a></p>
+<p id="section-4.2-4">These streams MUST NOT be closed. Closure of either unidirectional stream type
+MUST be treated as a connection error of type H3_CLOSED_CRITICAL_STREAM.<a href="#section-4.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.2-5">An endpoint MAY avoid creating an encoder stream if it will not be used (for
+example if its encoder does not wish to use the dynamic table, or if the maximum
 size of the dynamic table permitted by the peer is zero).<a href="#section-4.2-5" class="pilcrow">¶</a></p>
-<p id="section-4.2-6">An endpoint <span class="bcp14">MAY</span> avoid creating a decoder stream if its decoder sets the maximum
+<p id="section-4.2-6">An endpoint MAY avoid creating a decoder stream if its decoder sets the maximum
 capacity of the dynamic table to zero.<a href="#section-4.2-6" class="pilcrow">¶</a></p>
-<p id="section-4.2-7">An endpoint <span class="bcp14">MUST</span> allow its peer to create an encoder stream and a decoder stream
+<p id="section-4.2-7">An endpoint MUST allow its peer to create an encoder stream and a decoder stream
 even if the connection's settings prevent their use.<a href="#section-4.2-7" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -2108,10 +2107,10 @@ duplicate entry.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
 <p id="section-4.3.1-1">An encoder informs the decoder of a change to the dynamic table capacity using
 an instruction that starts with the '001' 3-bit pattern.  This is followed
 by the new dynamic table capacity represented as an integer with a 5-bit prefix;
-see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
+see <a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>.<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
 <span id="name-set-dynamic-table-capacity-2"></span><div id="fig-set-capacity">
 <figure id="figure-5">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.3.1-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.3.1-2.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2123,34 +2122,34 @@ see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href="#sectio
 <a href="#name-set-dynamic-table-capacity-2" class="selfRef">Set Dynamic Table Capacity</a>
             </figcaption></figure>
 </div>
-<p id="section-4.3.1-3">The new capacity <span class="bcp14">MUST</span> be lower than or equal to the limit described in
-<a href="#maximum-dynamic-table-capacity" class="xref">Section 3.2.3</a>.  In HTTP/3, this limit is the value of the
-SETTINGS_QPACK_MAX_TABLE_CAPACITY parameter (<a href="#configuration" class="xref">Section 5</a>) received from
-the decoder.  The decoder <span class="bcp14">MUST</span> treat a new dynamic table capacity value that
+<p id="section-4.3.1-3">The new capacity MUST be lower than or equal to the limit described in
+<a href="#maximum-dynamic-table-capacity" class="auto internal xref">Section 3.2.3</a>.  In HTTP/3, this limit is the value of the
+SETTINGS_QPACK_MAX_TABLE_CAPACITY parameter (<a href="#configuration" class="auto internal xref">Section 5</a>) received from
+the decoder.  The decoder MUST treat a new dynamic table capacity value that
 exceeds this limit as a connection error of type QPACK_ENCODER_STREAM_ERROR.<a href="#section-4.3.1-3" class="pilcrow">¶</a></p>
 <p id="section-4.3.1-4">Reducing the dynamic table capacity can cause entries to be evicted; see
-<a href="#eviction" class="xref">Section 3.2.2</a>.  This <span class="bcp14">MUST NOT</span> cause the eviction of entries that are not
-evictable; see <a href="#blocked-insertion" class="xref">Section 2.1.1</a>.  Changing the capacity of the dynamic
+<a href="#eviction" class="auto internal xref">Section 3.2.2</a>.  This MUST NOT cause the eviction of entries that are not
+evictable; see <a href="#blocked-insertion" class="auto internal xref">Section 2.1.1</a>.  Changing the capacity of the dynamic
 table is not acknowledged as this instruction does not insert an entry.<a href="#section-4.3.1-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="insert-with-name-reference">
 <section id="section-4.3.2">
           <h4 id="name-insert-with-name-reference">
-<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-insert-with-name-reference" class="section-name selfRef">Insert with Name Reference</a>
+<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-insert-with-name-reference" class="section-name selfRef">Insert With Name Reference</a>
           </h4>
 <p id="section-4.3.2-1">An encoder adds an entry to the dynamic table where the field name matches the
 field name of an entry stored in the static or the dynamic table using an
 instruction that starts with the '1' 1-bit pattern.  The second ('T') bit
 indicates whether the reference is to the static or dynamic table. The 6-bit
-prefix integer (<a href="#prefixed-integers" class="xref">Section 4.1.1</a>) that follows is used to locate the table
+prefix integer (<a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>) that follows is used to locate the table
 entry for the field name.  When T=1, the number represents the static table
 index; when T=0, the number is the relative index of the entry in the dynamic
 table.<a href="#section-4.3.2-1" class="pilcrow">¶</a></p>
 <p id="section-4.3.2-2">The field name reference is followed by the field value represented as a string
-literal; see <a href="#string-literals" class="xref">Section 4.1.2</a>.<a href="#section-4.3.2-2" class="pilcrow">¶</a></p>
+literal; see <a href="#string-literals" class="auto internal xref">Section 4.1.2</a>.<a href="#section-4.3.2-2" class="pilcrow">¶</a></p>
 <span id="name-insert-field-line-indexed-n"></span><figure id="figure-6">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.3.2-3.1">
+            <div class="lang-drawing sourcecode" id="section-4.3.2-3.1">
 <pre>
      0   1   2   3   4   5   6   7
    +---+---+---+---+---+---+---+---+
@@ -2170,16 +2169,16 @@ literal; see <a href="#string-literals" class="xref">Section 4.1.2</a>.<a href="
 <div id="insert-with-literal-name">
 <section id="section-4.3.3">
           <h4 id="name-insert-with-literal-name">
-<a href="#section-4.3.3" class="section-number selfRef">4.3.3. </a><a href="#name-insert-with-literal-name" class="section-name selfRef">Insert with Literal Name</a>
+<a href="#section-4.3.3" class="section-number selfRef">4.3.3. </a><a href="#name-insert-with-literal-name" class="section-name selfRef">Insert With Literal Name</a>
           </h4>
 <p id="section-4.3.3-1">An encoder adds an entry to the dynamic table where both the field name and the
 field value are represented as string literals using an instruction that starts
 with the '01' 2-bit pattern.<a href="#section-4.3.3-1" class="pilcrow">¶</a></p>
-<p id="section-4.3.3-2">This is followed by the name represented as a 6-bit prefix string literal and
+<p id="section-4.3.3-2">This is followed by the name represented as a 6-bit prefix string literal, and
 the value represented as an 8-bit prefix string literal; see
-<a href="#string-literals" class="xref">Section 4.1.2</a>.<a href="#section-4.3.3-2" class="pilcrow">¶</a></p>
+<a href="#string-literals" class="auto internal xref">Section 4.1.2</a>.<a href="#section-4.3.3-2" class="pilcrow">¶</a></p>
 <span id="name-insert-field-line-new-name"></span><figure id="figure-7">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.3.3-3.1">
+            <div class="lang-drawing sourcecode" id="section-4.3.3-3.1">
 <pre>
      0   1   2   3   4   5   6   7
    +---+---+---+---+---+---+---+---+
@@ -2206,10 +2205,10 @@ the value represented as an 8-bit prefix string literal; see
 <p id="section-4.3.4-1">An encoder duplicates an existing entry in the dynamic table using an
 instruction that starts with the '000' 3-bit pattern.  This is followed by
 the relative index of the existing entry represented as an integer with a 5-bit
-prefix; see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href="#section-4.3.4-1" class="pilcrow">¶</a></p>
+prefix; see <a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>.<a href="#section-4.3.4-1" class="pilcrow">¶</a></p>
 <span id="name-duplicate-2"></span><div id="fig-index-with-duplication">
 <figure id="figure-8">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.3.4-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.3.4-2.1">
 <pre>
      0   1   2   3   4   5   6   7
    +---+---+---+---+---+---+---+---+
@@ -2221,7 +2220,7 @@ prefix; see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href=
 <a href="#name-duplicate-2" class="selfRef">Duplicate</a>
             </figcaption></figure>
 </div>
-<p id="section-4.3.4-3">The existing entry is reinserted into the dynamic table without resending
+<p id="section-4.3.4-3">The existing entry is re-inserted into the dynamic table without resending
 either the name or the value. This is useful to avoid adding a reference to an
 older entry, which might block inserting new entries.<a href="#section-4.3.4-3" class="pilcrow">¶</a></p>
 </section>
@@ -2245,12 +2244,12 @@ of the dynamic table.<a href="#section-4.4-1" class="pilcrow">¶</a></p>
 is not zero, the decoder emits a Section Acknowledgment instruction.  The
 instruction starts with the '1' 1-bit pattern, followed by the field
 section's associated stream ID encoded as a 7-bit prefix integer; see
-<a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
-<p id="section-4.4.1-2">This instruction is used as described in Sections <a href="#known-received-count" class="xref">2.1.4</a> and
-<a href="#state-synchronization" class="xref">2.2.2</a>.<a href="#section-4.4.1-2" class="pilcrow">¶</a></p>
+<a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>.<a href="#section-4.4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.4.1-2">This instruction is used as described in <a href="#known-received-count" class="auto internal xref">Section 2.1.4</a> and
+in <a href="#state-synchronization" class="auto internal xref">Section 2.2.2</a>.<a href="#section-4.4.1-2" class="pilcrow">¶</a></p>
 <span id="name-section-acknowledgment-2"></span><div id="fig-header-ack">
 <figure id="figure-9">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.4.1-3.1">
+            <div class="lang-drawing sourcecode" id="section-4.4.1-3.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2264,10 +2263,10 @@ section's associated stream ID encoded as a 7-bit prefix integer; see
 </div>
 <p id="section-4.4.1-4">If an encoder receives a Section Acknowledgment instruction referring to a
 stream on which every encoded field section with a non-zero Required Insert
-Count has already been acknowledged, this <span class="bcp14">MUST</span> be treated as a connection error
+Count has already been acknowledged, this MUST be treated as a connection error
 of type QPACK_DECODER_STREAM_ERROR.<a href="#section-4.4.1-4" class="pilcrow">¶</a></p>
 <p id="section-4.4.1-5">The Section Acknowledgment instruction might increase the Known Received Count;
-see <a href="#known-received-count" class="xref">Section 2.1.4</a>.<a href="#section-4.4.1-5" class="pilcrow">¶</a></p>
+see <a href="#known-received-count" class="auto internal xref">Section 2.1.4</a>.<a href="#section-4.4.1-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="stream-cancellation">
@@ -2279,10 +2278,10 @@ see <a href="#known-received-count" class="xref">Section 2.1.4</a>.<a href="#sec
 Cancellation instruction. The instruction starts with the '01' 2-bit
 pattern, followed by the stream ID of the affected stream encoded as a
 6-bit prefix integer.<a href="#section-4.4.2-1" class="pilcrow">¶</a></p>
-<p id="section-4.4.2-2">This instruction is used as described in <a href="#state-synchronization" class="xref">Section 2.2.2</a>.<a href="#section-4.4.2-2" class="pilcrow">¶</a></p>
+<p id="section-4.4.2-2">This instruction is used as described in <a href="#state-synchronization" class="auto internal xref">Section 2.2.2</a>.<a href="#section-4.4.2-2" class="pilcrow">¶</a></p>
 <span id="name-stream-cancellation-2"></span><div id="fig-stream-cancel">
 <figure id="figure-10">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.4.2-3.1">
+            <div class="lang-drawing sourcecode" id="section-4.4.2-3.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2303,13 +2302,13 @@ pattern, followed by the stream ID of the affected stream encoded as a
           </h4>
 <p id="section-4.4.3-1">The Insert Count Increment instruction starts with the '00' 2-bit pattern,
 followed by the Increment encoded as a 6-bit prefix integer.  This instruction
-increases the Known Received Count (<a href="#known-received-count" class="xref">Section 2.1.4</a>) by the value of
+increases the Known Received Count (<a href="#known-received-count" class="auto internal xref">Section 2.1.4</a>) by the value of
 the Increment parameter.  The decoder should send an Increment value that
 increases the Known Received Count to the total number of dynamic table
 insertions and duplications processed so far.<a href="#section-4.4.3-1" class="pilcrow">¶</a></p>
 <span id="name-insert-count-increment-2"></span><div id="fig-size-sync">
 <figure id="figure-11">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.4.3-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.4.3-2.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2322,7 +2321,7 @@ insertions and duplications processed so far.<a href="#section-4.4.3-1" class="p
             </figcaption></figure>
 </div>
 <p id="section-4.4.3-3">An encoder that receives an Increment field equal to zero, or one that increases
-the Known Received Count beyond what the encoder has sent, <span class="bcp14">MUST</span> treat this as a
+the Known Received Count beyond what the encoder has sent MUST treat this as a
 connection error of type QPACK_DECODER_STREAM_ERROR.<a href="#section-4.4.3-3" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -2336,7 +2335,7 @@ connection error of type QPACK_DECODER_STREAM_ERROR.<a href="#section-4.4.3-3" c
 <p id="section-4.5-1">An encoded field section consists of a prefix and a possibly empty sequence of
 representations defined in this section.  Each representation corresponds to a
 single field line.  These representations reference the static table or the
-dynamic table in a particular state, but they do not modify that state.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
+dynamic table in a particular state, but do not modify that state.<a href="#section-4.5-1" class="pilcrow">¶</a></p>
 <p id="section-4.5-2">Encoded field sections are carried in frames on streams defined by the enclosing
 protocol.<a href="#section-4.5-2" class="pilcrow">¶</a></p>
 <div id="header-prefix">
@@ -2346,11 +2345,11 @@ protocol.<a href="#section-4.5-2" class="pilcrow">¶</a></p>
           </h4>
 <p id="section-4.5.1-1">Each encoded field section is prefixed with two integers.  The Required Insert
 Count is encoded as an integer with an 8-bit prefix using the encoding described
-in <a href="#ric" class="xref">Section 4.5.1.1</a>.  The Base is encoded as a Sign bit ('S') and a Delta Base value
-with a 7-bit prefix; see <a href="#base" class="xref">Section 4.5.1.2</a>.<a href="#section-4.5.1-1" class="pilcrow">¶</a></p>
+in <a href="#ric" class="auto internal xref">Section 4.5.1.1</a>.  The Base is encoded as a sign bit ('S') and a Delta Base value
+with a 7-bit prefix; see <a href="#base" class="auto internal xref">Section 4.5.1.2</a>.<a href="#section-4.5.1-1" class="pilcrow">¶</a></p>
 <span id="name-encoded-field-section"></span><div id="fig-base-index">
 <figure id="figure-12">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.5.1-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.5.1-2.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2375,8 +2374,8 @@ with a 7-bit prefix; see <a href="#base" class="xref">Section 4.5.1.2</a>.<a hre
 process the encoded field section.  Blocking decoders use the Required Insert
 Count to determine when it is safe to process the rest of the field section.<a href="#section-4.5.1.1-1" class="pilcrow">¶</a></p>
 <p id="section-4.5.1.1-2">The encoder transforms the Required Insert Count as follows before encoding:<a href="#section-4.5.1.1-2" class="pilcrow">¶</a></p>
-<div id="section-4.5.1.1-3">
-<pre class="lang-pseudocode sourcecode">
+<div class="alignLeft art-text artwork" id="section-4.5.1.1-3">
+<pre>
    if ReqInsertCount == 0:
       EncInsertCount = 0
    else:
@@ -2385,23 +2384,23 @@ Count to determine when it is safe to process the rest of the field section.<a h
 </div>
 <p id="section-4.5.1.1-4">Here <code>MaxEntries</code> is the maximum number of entries that the dynamic table can
 have.  The smallest entry has empty name and value strings and has the size of
-32.  Hence, <code>MaxEntries</code> is calculated as:<a href="#section-4.5.1.1-4" class="pilcrow">¶</a></p>
-<div id="section-4.5.1.1-5">
-<pre class="lang-pseudocode sourcecode">
+32.  Hence <code>MaxEntries</code> is calculated as<a href="#section-4.5.1.1-4" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.5.1.1-5">
+<pre>
    MaxEntries = floor( MaxTableCapacity / 32 )
 </pre><a href="#section-4.5.1.1-5" class="pilcrow">¶</a>
 </div>
 <p id="section-4.5.1.1-6"><code>MaxTableCapacity</code> is the maximum capacity of the dynamic table as specified by
-the decoder; see <a href="#maximum-dynamic-table-capacity" class="xref">Section 3.2.3</a>.<a href="#section-4.5.1.1-6" class="pilcrow">¶</a></p>
+the decoder; see <a href="#maximum-dynamic-table-capacity" class="auto internal xref">Section 3.2.3</a>.<a href="#section-4.5.1.1-6" class="pilcrow">¶</a></p>
 <p id="section-4.5.1.1-7">This encoding limits the length of the prefix on long-lived connections.<a href="#section-4.5.1.1-7" class="pilcrow">¶</a></p>
 <p id="section-4.5.1.1-8">The decoder can reconstruct the Required Insert Count using an algorithm such as
 the following.  If the decoder encounters a value of EncodedInsertCount that
-could not have been produced by a conformant encoder, it <span class="bcp14">MUST</span> treat this as a
+could not have been produced by a conformant encoder, it MUST treat this as a
 connection error of type QPACK_DECOMPRESSION_FAILED.<a href="#section-4.5.1.1-8" class="pilcrow">¶</a></p>
-<p id="section-4.5.1.1-9"><code>TotalNumberOfInserts</code> is the total number of inserts into the decoder's dynamic
+<p id="section-4.5.1.1-9">TotalNumberOfInserts is the total number of inserts into the decoder's dynamic
 table.<a href="#section-4.5.1.1-9" class="pilcrow">¶</a></p>
-<div id="section-4.5.1.1-10">
-<pre class="lang-pseudocode sourcecode">
+<div class="alignLeft art-text artwork" id="section-4.5.1.1-10">
+<pre>
    FullRange = 2 * MaxEntries
    if EncodedInsertCount == 0:
       ReqInsertCount = 0
@@ -2438,18 +2437,18 @@ value of 4 indicates that the Required Insert Count is 9 for the field section.<
 <a href="#section-4.5.1.2" class="section-number selfRef">4.5.1.2. </a><a href="#name-base" class="section-name selfRef">Base</a>
             </h5>
 <p id="section-4.5.1.2-1">The Base is used to resolve references in the dynamic table as described in
-<a href="#relative-indexing" class="xref">Section 3.2.5</a>.<a href="#section-4.5.1.2-1" class="pilcrow">¶</a></p>
+<a href="#relative-indexing" class="auto internal xref">Section 3.2.5</a>.<a href="#section-4.5.1.2-1" class="pilcrow">¶</a></p>
 <p id="section-4.5.1.2-2">To save space, the Base is encoded relative to the Required Insert Count using a
-one-bit Sign ('S' in <a href="#fig-base-index" class="xref">Figure 12</a>) and the Delta Base value.  A Sign bit
-of 0 indicates that the Base is greater than or equal to the value of the
-Required Insert Count; the decoder adds the value of Delta Base to the Required
-Insert Count to determine the value of the Base.  A Sign bit of 1 indicates that
-the Base is less than the Required Insert Count; the decoder subtracts the value
-of Delta Base from the Required Insert Count and also subtracts one to determine
-the value of the Base. That is:<a href="#section-4.5.1.2-2" class="pilcrow">¶</a></p>
-<div id="section-4.5.1.2-3">
-<pre class="lang-pseudocode sourcecode">
-   if Sign == 0:
+one-bit sign ('S') and the Delta Base value.  A sign bit of 0 indicates that the
+Base is greater than or equal to the value of the Required Insert Count; the
+decoder adds the value of Delta Base to the Required Insert Count to determine
+the value of the Base.  A sign bit of 1 indicates that the Base is less than the
+Required Insert Count; the decoder subtracts the value of Delta Base from the
+Required Insert Count and also subtracts one to determine the value of the Base.
+That is:<a href="#section-4.5.1.2-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-4.5.1.2-3">
+<pre>
+   if S == 0:
       Base = ReqInsertCount + DeltaBase
    else:
       Base = ReqInsertCount - DeltaBase - 1
@@ -2458,27 +2457,22 @@ the value of the Base. That is:<a href="#section-4.5.1.2-2" class="pilcrow">¶</
 <p id="section-4.5.1.2-4">A single-pass encoder determines the Base before encoding a field section.  If
 the encoder inserted entries in the dynamic table while encoding the field
 section and is referencing them, Required Insert Count will be greater than the
-Base, so the encoded difference is negative and the Sign bit is set to 1.  If
+Base, so the encoded difference is negative and the sign bit is set to 1.  If
 the field section was not encoded using representations that reference the most
 recent entry in the table and did not insert any new entries, the Base will be
-greater than the Required Insert Count, so the encoded difference will be
-positive and the Sign bit is set to 0.<a href="#section-4.5.1.2-4" class="pilcrow">¶</a></p>
-<p id="section-4.5.1.2-5">The value of Base <span class="bcp14">MUST NOT</span> be negative. Though the protocol might operate
-correctly with a negative Base using post-Base indexing, it is unnecessary and
-inefficient. An endpoint <span class="bcp14">MUST</span> treat a field block with a Sign bit of 1 as
-invalid if the value of Required Insert Count is less than or equal to the value
-of Delta Base.<a href="#section-4.5.1.2-5" class="pilcrow">¶</a></p>
-<p id="section-4.5.1.2-6">An encoder that produces table updates before encoding a field section might set
-Base to the value of Required Insert Count.  In such a case, both the Sign bit
-and the Delta Base will be set to zero.<a href="#section-4.5.1.2-6" class="pilcrow">¶</a></p>
-<p id="section-4.5.1.2-7">A field section that was encoded without references to the dynamic table can use
+greater than the Required Insert Count, so the delta will be positive and the
+sign bit is set to 0.<a href="#section-4.5.1.2-4" class="pilcrow">¶</a></p>
+<p id="section-4.5.1.2-5">An encoder that produces table updates before encoding a field section might set
+Base to the value of Required Insert Count.  In such case, both the sign bit and
+the Delta Base will be set to zero.<a href="#section-4.5.1.2-5" class="pilcrow">¶</a></p>
+<p id="section-4.5.1.2-6">A field section that was encoded without references to the dynamic table can use
 any value for the Base; setting Delta Base to zero is one of the most efficient
-encodings.<a href="#section-4.5.1.2-7" class="pilcrow">¶</a></p>
-<p id="section-4.5.1.2-8">For example, with a Required Insert Count of 9, a decoder receives a Sign bit
-of 1 and a Delta Base of 2.  This sets the Base to 6 and enables post-Base
-indexing for three entries.  In this example, a relative index of 1 refers to
-the fifth entry that was added to the table; a post-Base index of 1 refers to
-the eighth entry.<a href="#section-4.5.1.2-8" class="pilcrow">¶</a></p>
+encodings.<a href="#section-4.5.1.2-6" class="pilcrow">¶</a></p>
+<p id="section-4.5.1.2-7">For example, with a Required Insert Count of 9, a decoder receives an S bit of 1
+and a Delta Base of 2.  This sets the Base to 6 and enables post-base indexing
+for three entries.  In this example, a relative index of 1 refers to the 5th
+entry that was added to the table; a post-base index of 1 refers to the 8th
+entry.<a href="#section-4.5.1.2-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2488,11 +2482,11 @@ the eighth entry.<a href="#section-4.5.1.2-8" class="pilcrow">¶</a></p>
           <h4 id="name-indexed-field-line">
 <a href="#section-4.5.2" class="section-number selfRef">4.5.2. </a><a href="#name-indexed-field-line" class="section-name selfRef">Indexed Field Line</a>
           </h4>
-<p id="section-4.5.2-1">An indexed field line representation identifies an entry in the static table
+<p id="section-4.5.2-1">An indexed field line representation identifies an entry in the static table,
 or an entry in the dynamic table with an absolute index less than the value of
 the Base.<a href="#section-4.5.2-1" class="pilcrow">¶</a></p>
 <span id="name-indexed-field-line-2"></span><figure id="figure-13">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.5.2-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.5.2-2.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2503,9 +2497,9 @@ the Base.<a href="#section-4.5.2-1" class="pilcrow">¶</a></p>
 <figcaption><a href="#figure-13" class="selfRef">Figure 13</a>:
 <a href="#name-indexed-field-line-2" class="selfRef">Indexed Field Line</a>
             </figcaption></figure>
-<p id="section-4.5.2-3">This representation starts with the '1' 1-bit pattern, followed by the 'T' bit,
+<p id="section-4.5.2-3">This representation starts with the '1' 1-bit pattern, followed by the 'T' bit
 indicating whether the reference is into the static or dynamic table.  The 6-bit
-prefix integer (<a href="#prefixed-integers" class="xref">Section 4.1.1</a>) that follows is used to locate the
+prefix integer (<a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>) that follows is used to locate the
 table entry for the field line.  When T=1, the number represents the static
 table index; when T=0, the number is the relative index of the entry in the
 dynamic table.<a href="#section-4.5.2-3" class="pilcrow">¶</a></p>
@@ -2514,13 +2508,13 @@ dynamic table.<a href="#section-4.5.2-3" class="pilcrow">¶</a></p>
 <div id="indexed-field-line-with-post-base-index">
 <section id="section-4.5.3">
           <h4 id="name-indexed-field-line-with-pos">
-<a href="#section-4.5.3" class="section-number selfRef">4.5.3. </a><a href="#name-indexed-field-line-with-pos" class="section-name selfRef">Indexed Field Line with Post-Base Index</a>
+<a href="#section-4.5.3" class="section-number selfRef">4.5.3. </a><a href="#name-indexed-field-line-with-pos" class="section-name selfRef">Indexed Field Line With Post-Base Index</a>
           </h4>
-<p id="section-4.5.3-1">An indexed field line with post-Base index representation identifies an entry
+<p id="section-4.5.3-1">An indexed field line with post-base index representation identifies an entry
 in the dynamic table with an absolute index greater than or equal to the value
 of the Base.<a href="#section-4.5.3-1" class="pilcrow">¶</a></p>
 <span id="name-indexed-field-line-with-post"></span><figure id="figure-14">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.5.3-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.5.3-2.1">
 <pre>
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
@@ -2532,21 +2526,21 @@ of the Base.<a href="#section-4.5.3-1" class="pilcrow">¶</a></p>
 <a href="#name-indexed-field-line-with-post" class="selfRef">Indexed Field Line with Post-Base Index</a>
             </figcaption></figure>
 <p id="section-4.5.3-3">This representation starts with the '0001' 4-bit pattern.  This is followed
-by the post-Base index (<a href="#post-base" class="xref">Section 3.2.6</a>) of the matching field line, represented
-as an integer with a 4-bit prefix; see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href="#section-4.5.3-3" class="pilcrow">¶</a></p>
+by the post-base index (<a href="#post-base" class="auto internal xref">Section 3.2.6</a>) of the matching field line, represented
+as an integer with a 4-bit prefix; see <a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>.<a href="#section-4.5.3-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="literal-name-reference">
 <section id="section-4.5.4">
           <h4 id="name-literal-field-line-with-nam">
-<a href="#section-4.5.4" class="section-number selfRef">4.5.4. </a><a href="#name-literal-field-line-with-nam" class="section-name selfRef">Literal Field Line with Name Reference</a>
+<a href="#section-4.5.4" class="section-number selfRef">4.5.4. </a><a href="#name-literal-field-line-with-nam" class="section-name selfRef">Literal Field Line With Name Reference</a>
           </h4>
 <p id="section-4.5.4-1">A literal field line with name reference representation encodes a field line
-where the field name matches the field name of an entry in the static table or
+where the field name matches the field name of an entry in the static table, or
 the field name of an entry in the dynamic table with an absolute index less than
 the value of the Base.<a href="#section-4.5.4-1" class="pilcrow">¶</a></p>
 <span id="name-literal-field-line-with-name"></span><figure id="figure-15">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.5.4-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.5.4-2.1">
 <pre>
      0   1   2   3   4   5   6   7
    +---+---+---+---+---+---+---+---+
@@ -2559,36 +2553,36 @@ the value of the Base.<a href="#section-4.5.4-1" class="pilcrow">¶</a></p>
 </pre>
 </div>
 <figcaption><a href="#figure-15" class="selfRef">Figure 15</a>:
-<a href="#name-literal-field-line-with-name" class="selfRef">Literal Field Line with Name Reference</a>
+<a href="#name-literal-field-line-with-name" class="selfRef">Literal Field Line With Name Reference</a>
             </figcaption></figure>
 <p id="section-4.5.4-3">This representation starts with the '01' 2-bit pattern.  The following bit,
 'N', indicates whether an intermediary is permitted to add this field line to
 the dynamic table on subsequent hops. When the 'N' bit is set, the encoded field
-line <span class="bcp14">MUST</span> always be encoded with a literal representation. In particular, when a
+line MUST always be encoded with a literal representation. In particular, when a
 peer sends a field line that it received represented as a literal field line
-with the 'N' bit set, it <span class="bcp14">MUST</span> use a literal representation to forward this field
+with the 'N' bit set, it MUST use a literal representation to forward this field
 line.  This bit is intended for protecting field values that are not to be put
-at risk by compressing them; see <a href="#probing-dynamic-table-state" class="xref">Section 7.1</a> for more
+at risk by compressing them; see <a href="#probing-dynamic-table-state" class="auto internal xref">Section 7.1</a> for more
 details.<a href="#section-4.5.4-3" class="pilcrow">¶</a></p>
 <p id="section-4.5.4-4">The fourth ('T') bit indicates whether the reference is to the static or dynamic
-table.  The 4-bit prefix integer (<a href="#prefixed-integers" class="xref">Section 4.1.1</a>) that follows is used to
+table.  The 4-bit prefix integer (<a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>) that follows is used to
 locate the table entry for the field name.  When T=1, the number represents the
 static table index; when T=0, the number is the relative index of the entry in
 the dynamic table.<a href="#section-4.5.4-4" class="pilcrow">¶</a></p>
 <p id="section-4.5.4-5">Only the field name is taken from the dynamic table entry; the field value is
-encoded as an 8-bit prefix string literal; see <a href="#string-literals" class="xref">Section 4.1.2</a>.<a href="#section-4.5.4-5" class="pilcrow">¶</a></p>
+encoded as an 8-bit prefix string literal; see <a href="#string-literals" class="auto internal xref">Section 4.1.2</a>.<a href="#section-4.5.4-5" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="literal-field-line-with-post-base-name-reference">
 <section id="section-4.5.5">
           <h4 id="name-literal-field-line-with-pos">
-<a href="#section-4.5.5" class="section-number selfRef">4.5.5. </a><a href="#name-literal-field-line-with-pos" class="section-name selfRef">Literal Field Line with Post-Base Name Reference</a>
+<a href="#section-4.5.5" class="section-number selfRef">4.5.5. </a><a href="#name-literal-field-line-with-pos" class="section-name selfRef">Literal Field Line With Post-Base Name Reference</a>
           </h4>
-<p id="section-4.5.5-1">A literal field line with post-Base name reference representation encodes a
+<p id="section-4.5.5-1">A literal field line with post-base name reference representation encodes a
 field line where the field name matches the field name of a dynamic table entry
 with an absolute index greater than or equal to the value of the Base.<a href="#section-4.5.5-1" class="pilcrow">¶</a></p>
 <span id="name-literal-field-line-with-post"></span><figure id="figure-16">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.5.5-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.5.5-2.1">
 <pre>
      0   1   2   3   4   5   6   7
    +---+---+---+---+---+---+---+---+
@@ -2601,25 +2595,25 @@ with an absolute index greater than or equal to the value of the Base.<a href="#
 </pre>
 </div>
 <figcaption><a href="#figure-16" class="selfRef">Figure 16</a>:
-<a href="#name-literal-field-line-with-post" class="selfRef">Literal Field Line with Post-Base Name Reference</a>
+<a href="#name-literal-field-line-with-post" class="selfRef">Literal Field Line With Post-Base Name Reference</a>
             </figcaption></figure>
 <p id="section-4.5.5-3">This representation starts with the '0000' 4-bit pattern.  The fifth bit is
-the 'N' bit as described in <a href="#literal-name-reference" class="xref">Section 4.5.4</a>.  This is followed by a
-post-Base index of the dynamic table entry (<a href="#post-base" class="xref">Section 3.2.6</a>) encoded as an
-integer with a 3-bit prefix; see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>.<a href="#section-4.5.5-3" class="pilcrow">¶</a></p>
+the 'N' bit as described in <a href="#literal-name-reference" class="auto internal xref">Section 4.5.4</a>.  This is followed by a
+post-base index of the dynamic table entry (<a href="#post-base" class="auto internal xref">Section 3.2.6</a>) encoded as an
+integer with a 3-bit prefix; see <a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>.<a href="#section-4.5.5-3" class="pilcrow">¶</a></p>
 <p id="section-4.5.5-4">Only the field name is taken from the dynamic table entry; the field value is
-encoded as an 8-bit prefix string literal; see <a href="#string-literals" class="xref">Section 4.1.2</a>.<a href="#section-4.5.5-4" class="pilcrow">¶</a></p>
+encoded as an 8-bit prefix string literal; see <a href="#string-literals" class="auto internal xref">Section 4.1.2</a>.<a href="#section-4.5.5-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="literal-field-line-with-literal-name">
 <section id="section-4.5.6">
           <h4 id="name-literal-field-line-with-lit">
-<a href="#section-4.5.6" class="section-number selfRef">4.5.6. </a><a href="#name-literal-field-line-with-lit" class="section-name selfRef">Literal Field Line with Literal Name</a>
+<a href="#section-4.5.6" class="section-number selfRef">4.5.6. </a><a href="#name-literal-field-line-with-lit" class="section-name selfRef">Literal Field Line With Literal Name</a>
           </h4>
 <p id="section-4.5.6-1">The literal field line with literal name representation encodes a
 field name and a field value as string literals.<a href="#section-4.5.6-1" class="pilcrow">¶</a></p>
 <span id="name-literal-field-line-with-lite"></span><figure id="figure-17">
-            <div class="alignLeft art-ascii-art art-text artwork" id="section-4.5.6-2.1">
+            <div class="lang-drawing sourcecode" id="section-4.5.6-2.1">
 <pre>
      0   1   2   3   4   5   6   7
    +---+---+---+---+---+---+---+---+
@@ -2634,12 +2628,12 @@ field name and a field value as string literals.<a href="#section-4.5.6-1" class
 </pre>
 </div>
 <figcaption><a href="#figure-17" class="selfRef">Figure 17</a>:
-<a href="#name-literal-field-line-with-lite" class="selfRef">Literal Field Line with Literal Name</a>
+<a href="#name-literal-field-line-with-lite" class="selfRef">Literal Field Line With Literal Name</a>
             </figcaption></figure>
 <p id="section-4.5.6-3">This representation starts with the '001' 3-bit pattern.  The fourth bit is
-the 'N' bit as described in <a href="#literal-name-reference" class="xref">Section 4.5.4</a>.  The name follows,
+the 'N' bit as described in <a href="#literal-name-reference" class="auto internal xref">Section 4.5.4</a>.  The name follows,
 represented as a 4-bit prefix string literal, then the value, represented as an
-8-bit prefix string literal; see <a href="#string-literals" class="xref">Section 4.1.2</a>.<a href="#section-4.5.6-3" class="pilcrow">¶</a></p>
+8-bit prefix string literal; see <a href="#string-literals" class="auto internal xref">Section 4.1.2</a>.<a href="#section-4.5.6-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -2655,13 +2649,13 @@ represented as a 4-bit prefix string literal, then the value, represented as an
 <span class="break"></span><dl class="dlParallel" id="section-5-2">
         <dt id="section-5-2.1">SETTINGS_QPACK_MAX_TABLE_CAPACITY (0x01):</dt>
         <dd style="margin-left: 1.5em" id="section-5-2.2">
-          <p id="section-5-2.2.1">The default value is zero.  See <a href="#header-table-dynamic" class="xref">Section 3.2</a> for usage.  This is
+          <p id="section-5-2.2.1">The default value is zero.  See <a href="#header-table-dynamic" class="auto internal xref">Section 3.2</a> for usage.  This is
 the equivalent of the SETTINGS_HEADER_TABLE_SIZE from HTTP/2.<a href="#section-5-2.2.1" class="pilcrow">¶</a></p>
 </dd>
         <dd class="break"></dd>
 <dt id="section-5-2.3">SETTINGS_QPACK_BLOCKED_STREAMS (0x07):</dt>
         <dd style="margin-left: 1.5em" id="section-5-2.4">
-          <p id="section-5-2.4.1">The default value is zero.  See <a href="#blocked-streams" class="xref">Section 2.1.2</a>.<a href="#section-5-2.4.1" class="pilcrow">¶</a></p>
+          <p id="section-5-2.4.1">The default value is zero.  See <a href="#blocked-streams" class="auto internal xref">Section 2.1.2</a>.<a href="#section-5-2.4.1" class="pilcrow">¶</a></p>
 </dd>
       <dd class="break"></dd>
 </dl>
@@ -2724,20 +2718,23 @@ observe the length of those fields once they are encoded. When an attacker can
 do both, they can adaptively modify requests in order to confirm guesses about
 the dynamic table state. If a guess is compressed into a shorter length, the
 attacker can observe the encoded length and infer that the guess was correct.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
-<p id="section-7.1-3">This is possible even over the Transport Layer Security Protocol
-(<span>[<a href="#TLS" class="xref">TLS</a>]</span>) and the QUIC Transport Protocol (<span>[<a href="#QUIC-TRANSPORT" class="xref">QUIC-TRANSPORT</a>]</span>), because
-while TLS and QUIC provide confidentiality protection for content, they only
-provide a limited amount of protection for the length of that content.<a href="#section-7.1-3" class="pilcrow">¶</a></p>
-<aside id="section-7.1-4">
-          <p id="section-7.1-4.1">Note: Padding schemes only provide limited protection against an attacker with
-these capabilities, potentially only forcing an increased number of guesses to
-learn the length associated with a given guess. Padding schemes also work
-directly against compression by increasing the number of bits that are
-transmitted.<a href="#section-7.1-4.1" class="pilcrow">¶</a></p>
-</aside>
-<p id="section-7.1-5">Attacks like CRIME (<span>[<a href="#CRIME" class="xref">CRIME</a>]</span>) demonstrated the existence of these general
+<p id="section-7.1-3">This is possible even over the Transport Layer Security Protocol (TLS, see
+<span>[<a href="#TLS" class="cite xref">TLS</a>]</span>) and the QUIC Transport Protocol (see <span>[<a href="#QUIC-TRANSPORT" class="cite xref">QUIC-TRANSPORT</a>]</span>),
+because while TLS and QUIC provide confidentiality protection for content, they
+only provide a limited amount of protection for the length of that content.<a href="#section-7.1-3" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-7.1-4">
+          <dt id="section-7.1-4.1">Note:</dt>
+          <dd style="margin-left: 1.5em" id="section-7.1-4.2">
+            <p id="section-7.1-4.2.1">Padding schemes only provide limited protection against an attacker with these
+capabilities, potentially only forcing an increased number of guesses to learn
+the length associated with a given guess. Padding schemes also work directly
+against compression by increasing the number of bits that are transmitted.<a href="#section-7.1-4.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+</dl>
+<p id="section-7.1-5">Attacks like CRIME (<span>[<a href="#CRIME" class="cite xref">CRIME</a>]</span>) demonstrated the existence of these general
 attacker capabilities. The specific attack exploited the fact that DEFLATE
-(<span>[<a href="#RFC1951" class="xref">RFC1951</a>]</span>) removes redundancy based on prefix matching. This permitted the
+(<span>[<a href="#RFC1951" class="cite xref">RFC1951</a>]</span>) removes redundancy based on prefix matching. This permitted the
 attacker to confirm guesses a character at a time, reducing an exponential-time
 attack into a linear-time attack.<a href="#section-7.1-5" class="pilcrow">¶</a></p>
 <div id="applicability-to-qpack-and-http">
@@ -2745,12 +2742,12 @@ attack into a linear-time attack.<a href="#section-7.1-5" class="pilcrow">¶</a>
           <h4 id="name-applicability-to-qpack-and-">
 <a href="#section-7.1.1" class="section-number selfRef">7.1.1. </a><a href="#name-applicability-to-qpack-and-" class="section-name selfRef">Applicability to QPACK and HTTP</a>
           </h4>
-<p id="section-7.1.1-1">QPACK mitigates, but does not completely prevent, attacks modeled on CRIME
-(<span>[<a href="#CRIME" class="xref">CRIME</a>]</span>) by forcing a guess to match an entire field line rather than
+<p id="section-7.1.1-1">QPACK mitigates but does not completely prevent attacks modeled on CRIME
+(<span>[<a href="#CRIME" class="cite xref">CRIME</a>]</span>) by forcing a guess to match an entire field line, rather than
 individual characters. An attacker can only learn whether a guess is correct or
-not, so the attacker is reduced to a brute-force guess for the field values
-associated with a given field name.<a href="#section-7.1.1-1" class="pilcrow">¶</a></p>
-<p id="section-7.1.1-2">Therefore, the viability of recovering specific field values depends on the
+not, so is reduced to a brute force guess for the field values associated with a
+given field name.<a href="#section-7.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1.1-2">The viability of recovering specific field values therefore depends on the
 entropy of values. As a result, values with high entropy are unlikely to be
 recovered successfully. However, values with low entropy remain vulnerable.<a href="#section-7.1.1-2" class="pilcrow">¶</a></p>
 <p id="section-7.1.1-3">Attacks of this nature are possible any time that two mutually distrustful
@@ -2770,7 +2767,7 @@ connection toward a client.<a href="#section-7.1.1-5.2" class="pilcrow">¶</a>
 </li>
           </ul>
 <p id="section-7.1.1-6">Web browsers also need to assume that requests made on the same connection by
-different web origins (<span>[<a href="#RFC6454" class="xref">RFC6454</a>]</span>) are made by mutually distrustful entities.
+different web origins (<span>[<a href="#RFC6454" class="cite xref">RFC6454</a>]</span>) are made by mutually distrustful entities.
 Other scenarios involving mutually distrustful entities are also possible.<a href="#section-7.1.1-6" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -2806,14 +2803,18 @@ values.<a href="#section-7.1.2-6" class="pilcrow">¶</a></p>
 re-encoded by an intermediary without knowledge of which entity constructed a
 given message, the intermediary could inadvertently merge compression contexts
 that the original encoder had specifically kept separate.<a href="#section-7.1.2-7" class="pilcrow">¶</a></p>
-<aside id="section-7.1.2-8">
-            <p id="section-7.1.2-8.1">Note: Simply removing entries corresponding to the field from the dynamic table
-can be ineffectual if the attacker has a reliable way of causing values to be
-reinstalled. For example, a request to load an image in a web browser typically
-includes the Cookie header field (a potentially highly valued target for this
-sort of attack), and websites can easily force an image to be loaded, thereby
-refreshing the entry in the dynamic table.<a href="#section-7.1.2-8.1" class="pilcrow">¶</a></p>
-</aside>
+<span class="break"></span><dl class="dlParallel" id="section-7.1.2-8">
+            <dt id="section-7.1.2-8.1">Note:</dt>
+            <dd style="margin-left: 1.5em" id="section-7.1.2-8.2">
+              <p id="section-7.1.2-8.2.1">Simply removing entries corresponding to the field from the dynamic table can
+be ineffectual if the attacker has a reliable way of causing values to be
+reinstalled. For example, a request to load an image in a web browser
+typically includes the Cookie header field (a potentially highly valued target
+for this sort of attack), and web sites can easily force an image to be
+loaded, thereby refreshing the entry in the dynamic table.<a href="#section-7.1.2-8.2.1" class="pilcrow">¶</a></p>
+</dd>
+          <dd class="break"></dd>
+</dl>
 </section>
 </div>
 <div id="never-indexed-literals">
@@ -2825,13 +2826,13 @@ refreshing the entry in the dynamic table.<a href="#section-7.1.2-8.1" class="pi
 them and instead encoding their value as literals.<a href="#section-7.1.3-1" class="pilcrow">¶</a></p>
 <p id="section-7.1.3-2">Refusing to insert a field line into the dynamic table is only effective if
 doing so is avoided on all hops. The never-indexed literal bit (see
-<a href="#literal-name-reference" class="xref">Section 4.5.4</a>) can be used to signal to intermediaries that a
+<a href="#literal-name-reference" class="auto internal xref">Section 4.5.4</a>) can be used to signal to intermediaries that a
 particular value was intentionally sent as a literal.<a href="#section-7.1.3-2" class="pilcrow">¶</a></p>
-<p id="section-7.1.3-3">An intermediary <span class="bcp14">MUST NOT</span> re-encode a value that uses a literal representation
+<p id="section-7.1.3-3">An intermediary MUST NOT re-encode a value that uses a literal representation
 with the 'N' bit set with another representation that would index it. If QPACK
-is used for re-encoding, a literal representation with the 'N' bit set <span class="bcp14">MUST</span> be
+is used for re-encoding, a literal representation with the 'N' bit set MUST be
 used.  If HPACK is used for re-encoding, the never-indexed literal
-representation (see <span><a href="https://rfc-editor.org/rfc/rfc7541#section-6.2.3" class="relref">Section 6.2.3</a> of [<a href="#RFC7541" class="xref">RFC7541</a>]</span>) <span class="bcp14">MUST</span> be used.<a href="#section-7.1.3-3" class="pilcrow">¶</a></p>
+representation (see <span><a href="https://rfc-editor.org/rfc/rfc7541#section-6.2.3" class="relref">Section 6.2.3</a> of [<a href="#RFC7541" class="cite xref">RFC7541</a>]</span>) MUST be used.<a href="#section-7.1.3-3" class="pilcrow">¶</a></p>
 <p id="section-7.1.3-4">The choice to mark that a field value should never be indexed depends on several
 factors. Since QPACK does not protect against guessing an entire field value,
 short or low-entropy values are more readily recovered by an adversary.
@@ -2857,9 +2858,9 @@ representation will evolve over time as new attacks are discovered.<a href="#sec
         </h3>
 <p id="section-7.2-1">There is no currently known attack against a static Huffman encoding. A study
 has shown that using a static Huffman encoding table created an information
-leakage; however, this same study concluded that an attacker could not take
+leakage, however this same study concluded that an attacker could not take
 advantage of this information leakage to recover any meaningful amount of
-information (see <span>[<a href="#PETAL" class="xref">PETAL</a>]</span>).<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+information (see <span>[<a href="#PETAL" class="cite xref">PETAL</a>]</span>).<a href="#section-7.2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="memory-consumption">
@@ -2875,7 +2876,7 @@ maximum number of blocking streams to limit the amount of memory the encoder can
 cause the decoder to consume. In HTTP/3, these values are controlled by the
 decoder through the settings parameters SETTINGS_QPACK_MAX_TABLE_CAPACITY and
 SETTINGS_QPACK_BLOCKED_STREAMS, respectively (see
-<a href="#maximum-dynamic-table-capacity" class="xref">Section 3.2.3</a> and <a href="#blocked-streams" class="xref">Section 2.1.2</a>). The limit on the
+<a href="#maximum-dynamic-table-capacity" class="auto internal xref">Section 3.2.3</a> and <a href="#blocked-streams" class="auto internal xref">Section 2.1.2</a>). The limit on the
 size of the dynamic table takes into account the size of the data stored in the
 dynamic table, plus a small allowance for overhead.  The limit on the number of
 blocked streams is only a proxy for the maximum amount of memory required by the
@@ -2886,11 +2887,11 @@ setting an appropriate value for the maximum size of the dynamic table. In
 HTTP/3, this is realized by setting an appropriate value for the
 SETTINGS_QPACK_MAX_TABLE_CAPACITY parameter. An encoder can limit the amount of
 state memory it uses by choosing a smaller dynamic table size than the decoder
-allows and signaling this to the decoder (see <a href="#set-dynamic-capacity" class="xref">Section 4.3.1</a>).<a href="#section-7.3-3" class="pilcrow">¶</a></p>
+allows and signaling this to the decoder (see <a href="#set-dynamic-capacity" class="auto internal xref">Section 4.3.1</a>).<a href="#section-7.3-3" class="pilcrow">¶</a></p>
 <p id="section-7.3-4">A decoder can limit the amount of state memory used for blocked streams by
 setting an appropriate value for the maximum number of blocked streams.  In
 HTTP/3, this is realized by setting an appropriate value for the
-SETTINGS_QPACK_BLOCKED_STREAMS parameter.  Streams that risk becoming blocked
+SETTINGS_QPACK_BLOCKED_STREAMS parameter.  Streams which risk becoming blocked
 consume no additional state memory on the encoder.<a href="#section-7.3-4" class="pilcrow">¶</a></p>
 <p id="section-7.3-5">An encoder allocates memory to track all dynamic table references in
 unacknowledged field sections.  An implementation can directly limit the amount
@@ -2924,13 +2925,13 @@ connection.<a href="#section-7.3-7" class="pilcrow">¶</a></p>
 encoding for integers, or long string literals do not create security
 weaknesses.<a href="#section-7.4-1" class="pilcrow">¶</a></p>
 <p id="section-7.4-2">An implementation has to set a limit for the values it accepts for integers, as
-well as for the encoded length; see <a href="#prefixed-integers" class="xref">Section 4.1.1</a>. In the same way, it
+well as for the encoded length; see <a href="#prefixed-integers" class="auto internal xref">Section 4.1.1</a>. In the same way, it
 has to set a limit to the length it accepts for string literals; see
-<a href="#string-literals" class="xref">Section 4.1.2</a>.  These limits <span class="bcp14">SHOULD</span> be large enough to process the
+<a href="#string-literals" class="auto internal xref">Section 4.1.2</a>.  These limits SHOULD be large enough to process the
 largest individual field the HTTP implementation can be configured to accept.<a href="#section-7.4-2" class="pilcrow">¶</a></p>
 <p id="section-7.4-3">If an implementation encounters a value larger than it is able to decode, this
-<span class="bcp14">MUST</span> be treated as a stream error of type QPACK_DECOMPRESSION_FAILED if on a
-request stream or a connection error of the appropriate type if on the encoder
+MUST be treated as a stream error of type QPACK_DECOMPRESSION_FAILED if on a
+request stream, or a connection error of the appropriate type if on the encoder
 or decoder stream.<a href="#section-7.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
@@ -2942,21 +2943,18 @@ or decoder stream.<a href="#section-7.4-3" class="pilcrow">¶</a></p>
 <a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
       </h2>
 <p id="section-8-1">This document makes multiple registrations in the registries defined by
-<span>[<a href="#RFC9114" class="xref">RFC9114</a>]</span>. The allocations created by this document are all assigned
-permanent status and list a change controller of the IETF and a contact of the
-HTTP working group (ietf-http-wg@w3.org).<a href="#section-8-1" class="pilcrow">¶</a></p>
+<span>[<a href="#HTTP3" class="cite xref">HTTP3</a>]</span>. The allocations created by this document are all assigned permanent
+status and list a change controller of the IETF and a contact of the HTTP
+working group (ietf-http-wg@w3.org).<a href="#section-8-1" class="pilcrow">¶</a></p>
 <div id="settings-registration">
 <section id="section-8.1">
         <h3 id="name-settings-registration">
 <a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-settings-registration" class="section-name selfRef">Settings Registration</a>
         </h3>
 <p id="section-8.1-1">This document specifies two settings. The entries in the following table are
-registered in the "HTTP/3 Settings" registry established in <span>[<a href="#RFC9114" class="xref">RFC9114</a>]</span>.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
-<span id="name-additions-to-the-http-3-set"></span><table class="center" id="table-1">
-          <caption>
-<a href="#table-1" class="selfRef">Table 1</a>:
-<a href="#name-additions-to-the-http-3-set" class="selfRef">Additions to the HTTP/3 Settings Registry</a>
-          </caption>
+registered in the "HTTP/3 Settings" registry established in <span>[<a href="#HTTP3" class="cite xref">HTTP3</a>]</span>.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+          <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
 <thead>
             <tr>
               <th class="text-left" rowspan="1" colspan="1">Setting Name</th>
@@ -2970,7 +2968,7 @@ registered in the "HTTP/3 Settings" registry established in <span>[<a href="#RFC
               <td class="text-left" rowspan="1" colspan="1">QPACK_MAX_TABLE_CAPACITY</td>
               <td class="text-center" rowspan="1" colspan="1">0x01</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#configuration" class="xref">Section 5</a>
+                <a href="#configuration" class="auto internal xref">Section 5</a>
 </td>
               <td class="text-left" rowspan="1" colspan="1">0</td>
             </tr>
@@ -2978,14 +2976,14 @@ registered in the "HTTP/3 Settings" registry established in <span>[<a href="#RFC
               <td class="text-left" rowspan="1" colspan="1">QPACK_BLOCKED_STREAMS</td>
               <td class="text-center" rowspan="1" colspan="1">0x07</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#configuration" class="xref">Section 5</a>
+                <a href="#configuration" class="auto internal xref">Section 5</a>
 </td>
               <td class="text-left" rowspan="1" colspan="1">0</td>
             </tr>
           </tbody>
         </table>
-<p id="section-8.1-3">For formatting reasons, the setting names here are abbreviated by removing the
-'SETTINGS_' prefix.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+<p id="section-8.1-3">For fomatting reasons, the setting names here are abbreviated by removing the
+'SETTING_' prefix.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="stream-type-registration">
@@ -2994,12 +2992,9 @@ registered in the "HTTP/3 Settings" registry established in <span>[<a href="#RFC
 <a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-stream-type-registration" class="section-name selfRef">Stream Type Registration</a>
         </h3>
 <p id="section-8.2-1">This document specifies two stream types. The entries in the following table are
-registered in the "HTTP/3 Stream Types" registry established in <span>[<a href="#RFC9114" class="xref">RFC9114</a>]</span>.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
-<span id="name-additions-to-the-http-3-str"></span><table class="center" id="table-2">
-          <caption>
-<a href="#table-2" class="selfRef">Table 2</a>:
-<a href="#name-additions-to-the-http-3-str" class="selfRef">Additions to the HTTP/3 Stream Types Registry</a>
-          </caption>
+registered in the "HTTP/3 Stream Type" registry established in <span>[<a href="#HTTP3" class="cite xref">HTTP3</a>]</span>.<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-2">
+          <caption><a href="#table-2" class="selfRef">Table 2</a></caption>
 <thead>
             <tr>
               <th class="text-left" rowspan="1" colspan="1">Stream Type</th>
@@ -3013,7 +3008,7 @@ registered in the "HTTP/3 Stream Types" registry established in <span>[<a href="
               <td class="text-left" rowspan="1" colspan="1">QPACK Encoder Stream</td>
               <td class="text-center" rowspan="1" colspan="1">0x02</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#enc-dec-stream-def" class="xref">Section 4.2</a>
+                <a href="#enc-dec-stream-def" class="auto internal xref">Section 4.2</a>
 </td>
               <td class="text-left" rowspan="1" colspan="1">Both</td>
             </tr>
@@ -3021,7 +3016,7 @@ registered in the "HTTP/3 Stream Types" registry established in <span>[<a href="
               <td class="text-left" rowspan="1" colspan="1">QPACK Decoder Stream</td>
               <td class="text-center" rowspan="1" colspan="1">0x03</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#enc-dec-stream-def" class="xref">Section 4.2</a>
+                <a href="#enc-dec-stream-def" class="auto internal xref">Section 4.2</a>
 </td>
               <td class="text-left" rowspan="1" colspan="1">Both</td>
             </tr>
@@ -3035,12 +3030,9 @@ registered in the "HTTP/3 Stream Types" registry established in <span>[<a href="
 <a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-error-code-registration" class="section-name selfRef">Error Code Registration</a>
         </h3>
 <p id="section-8.3-1">This document specifies three error codes. The entries in the following table
-are registered in the "HTTP/3 Error Codes" registry established in <span>[<a href="#RFC9114" class="xref">RFC9114</a>]</span>.<a href="#section-8.3-1" class="pilcrow">¶</a></p>
-<span id="name-additions-to-the-http-3-err"></span><table class="center" id="table-3">
-          <caption>
-<a href="#table-3" class="selfRef">Table 3</a>:
-<a href="#name-additions-to-the-http-3-err" class="selfRef">Additions to the HTTP/3 Error Codes Registry</a>
-          </caption>
+are registered in the "HTTP/3 Error Code" registry established in <span>[<a href="#HTTP3" class="cite xref">HTTP3</a>]</span>.<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-3">
+          <caption><a href="#table-3" class="selfRef">Table 3</a></caption>
 <thead>
             <tr>
               <th class="text-left" rowspan="1" colspan="1">Name</th>
@@ -3055,7 +3047,7 @@ are registered in the "HTTP/3 Error Codes" registry established in <span>[<a hre
               <td class="text-left" rowspan="1" colspan="1">0x0200</td>
               <td class="text-left" rowspan="1" colspan="1">Decoding of a field section failed</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#error-handling" class="xref">Section 6</a>
+                <a href="#error-handling" class="auto internal xref">Section 6</a>
 </td>
             </tr>
             <tr>
@@ -3063,7 +3055,7 @@ are registered in the "HTTP/3 Error Codes" registry established in <span>[<a hre
               <td class="text-left" rowspan="1" colspan="1">0x0201</td>
               <td class="text-left" rowspan="1" colspan="1">Error on the encoder stream</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#error-handling" class="xref">Section 6</a>
+                <a href="#error-handling" class="auto internal xref">Section 6</a>
 </td>
             </tr>
             <tr>
@@ -3071,7 +3063,7 @@ are registered in the "HTTP/3 Error Codes" registry established in <span>[<a hre
               <td class="text-left" rowspan="1" colspan="1">0x0202</td>
               <td class="text-left" rowspan="1" colspan="1">Error on the decoder stream</td>
               <td class="text-left" rowspan="1" colspan="1">
-                <a href="#error-handling" class="xref">Section 6</a>
+                <a href="#error-handling" class="auto internal xref">Section 6</a>
 </td>
             </tr>
           </tbody>
@@ -3089,9 +3081,13 @@ are registered in the "HTTP/3 Error Codes" registry established in <span>[<a hre
 <a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
         </h3>
 <dl class="references">
+<dt id="HTTP3">[HTTP3]</dt>
+        <dd>
+<span class="refAuthor">Bishop, M., Ed.</span>, <span class="refTitle">"Hypertext Transfer Protocol Version 3 (HTTP/3)"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-quic-http</span>, <time datetime="2022-12-12" class="refDate">12 December 2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-quic-http">https://datatracker.ietf.org/doc/html/draft-ietf-quic-http</a>&gt;</span>. </dd>
+<dd class="break"></dd>
 <dt id="QUIC-TRANSPORT">[QUIC-TRANSPORT]</dt>
         <dd>
-<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2021-05" class="refDate">May 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9000">https://www.rfc-editor.org/rfc/rfc9000</a>&gt;</span>. </dd>
+<span class="refAuthor">Iyengar, J., Ed.</span> and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"QUIC: A UDP-Based Multiplexed and Secure Transport"</span>, <span class="seriesInfo">RFC 9000</span>, <span class="seriesInfo">DOI 10.17487/RFC9000</span>, <time datetime="2022-12-12" class="refDate">12 December 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9000">https://www.rfc-editor.org/rfc/rfc9000</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="RFC2119">[RFC2119]</dt>
         <dd>
@@ -3109,13 +3105,9 @@ are registered in the "HTTP/3 Error Codes" registry established in <span>[<a hre
         <dd>
 <span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
 <dd class="break"></dd>
-<dt id="RFC9110">[RFC9110]</dt>
-        <dd>
-<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="seriesInfo">STD 97</span>, <span class="seriesInfo">RFC 9110</span>, <span class="seriesInfo">DOI 10.17487/RFC9110</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9110">https://www.rfc-editor.org/rfc/rfc9110</a>&gt;</span>. </dd>
-<dd class="break"></dd>
-<dt id="RFC9114">[RFC9114]</dt>
+<dt id="SEMANTICS">[SEMANTICS]</dt>
       <dd>
-<span class="refAuthor">Bishop, M., Ed.</span>, <span class="refTitle">"HTTP/3"</span>, <span class="seriesInfo">RFC 9114</span>, <span class="seriesInfo">DOI 10.17487/RFC9114</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9114">https://www.rfc-editor.org/rfc/rfc9114</a>&gt;</span>. </dd>
+<span class="refAuthor">Fielding, R. T.</span>, <span class="refAuthor">Nottingham, M.</span>, and <span class="refAuthor">J. Reschke</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-httpbis-semantics-19</span>, <time datetime="2021-09-12" class="refDate">12 September 2021</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-semantics-19">https://datatracker.ietf.org/doc/html/draft-ietf-httpbis-semantics-19</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 </dl>
 </section>
@@ -3140,9 +3132,9 @@ are registered in the "HTTP/3 Error Codes" registry established in <span>[<a hre
         <dd>
 <span class="refAuthor">Barth, A.</span>, <span class="refTitle">"The Web Origin Concept"</span>, <span class="seriesInfo">RFC 6454</span>, <span class="seriesInfo">DOI 10.17487/RFC6454</span>, <time datetime="2011-12" class="refDate">December 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6454">https://www.rfc-editor.org/rfc/rfc6454</a>&gt;</span>. </dd>
 <dd class="break"></dd>
-<dt id="RFC9113">[RFC9113]</dt>
+<dt id="RFC7540">[RFC7540]</dt>
         <dd>
-<span class="refAuthor">Thomson, M., Ed.</span> and <span class="refAuthor">C. Benfield, Ed.</span>, <span class="refTitle">"HTTP/2"</span>, <span class="seriesInfo">RFC 9113</span>, <span class="seriesInfo">DOI 10.17487/RFC9113</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9113">https://www.rfc-editor.org/rfc/rfc9113</a>&gt;</span>. </dd>
+<span class="refAuthor">Belshe, M.</span>, <span class="refAuthor">Peon, R.</span>, and <span class="refAuthor">M. Thomson, Ed.</span>, <span class="refTitle">"Hypertext Transfer Protocol Version 2 (HTTP/2)"</span>, <span class="seriesInfo">RFC 7540</span>, <span class="seriesInfo">DOI 10.17487/RFC7540</span>, <time datetime="2015-05" class="refDate">May 2015</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7540">https://www.rfc-editor.org/rfc/rfc7540</a>&gt;</span>. </dd>
 <dd class="break"></dd>
 <dt id="TLS">[TLS]</dt>
       <dd>
@@ -3162,11 +3154,8 @@ and non-standard values. Due to this methodology, some of the entries may be
 inconsistent or appear multiple times with similar but not identical values. The
 order of the entries is optimized to encode the most common header fields with
 the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
-<span id="name-static-table-3"></span><table class="center" id="table-4">
-        <caption>
-<a href="#table-4" class="selfRef">Table 4</a>:
-<a href="#name-static-table-3" class="selfRef">Static Table</a>
-        </caption>
+<table class="center" id="table-4">
+        <caption><a href="#table-4" class="selfRef">Table 4</a></caption>
 <thead>
           <tr>
             <th class="text-left" rowspan="1" colspan="1">Index</th>
@@ -3178,7 +3167,7 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">0</td>
             <td class="text-left" rowspan="1" colspan="1">:authority</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">1</td>
@@ -3193,7 +3182,7 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">3</td>
             <td class="text-left" rowspan="1" colspan="1">content-disposition</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">4</td>
@@ -3203,52 +3192,52 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">5</td>
             <td class="text-left" rowspan="1" colspan="1">cookie</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">6</td>
             <td class="text-left" rowspan="1" colspan="1">date</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">7</td>
             <td class="text-left" rowspan="1" colspan="1">etag</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">8</td>
             <td class="text-left" rowspan="1" colspan="1">if-modified-since</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">9</td>
             <td class="text-left" rowspan="1" colspan="1">if-none-match</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">10</td>
             <td class="text-left" rowspan="1" colspan="1">last-modified</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">11</td>
             <td class="text-left" rowspan="1" colspan="1">link</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">12</td>
             <td class="text-left" rowspan="1" colspan="1">location</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">13</td>
             <td class="text-left" rowspan="1" colspan="1">referer</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">14</td>
             <td class="text-left" rowspan="1" colspan="1">set-cookie</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">15</td>
@@ -3538,7 +3527,7 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">72</td>
             <td class="text-left" rowspan="1" colspan="1">accept-language</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">73</td>
@@ -3598,7 +3587,7 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">84</td>
             <td class="text-left" rowspan="1" colspan="1">authorization</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">85</td>
@@ -3613,22 +3602,22 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">87</td>
             <td class="text-left" rowspan="1" colspan="1">expect-ct</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">88</td>
             <td class="text-left" rowspan="1" colspan="1">forwarded</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">89</td>
             <td class="text-left" rowspan="1" colspan="1">if-range</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">90</td>
             <td class="text-left" rowspan="1" colspan="1">origin</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">91</td>
@@ -3638,7 +3627,7 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">92</td>
             <td class="text-left" rowspan="1" colspan="1">server</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">93</td>
@@ -3653,12 +3642,12 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">95</td>
             <td class="text-left" rowspan="1" colspan="1">user-agent</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">96</td>
             <td class="text-left" rowspan="1" colspan="1">x-forwarded-for</td>
-            <td class="text-left" rowspan="1" colspan="1"></td>
+            <td class="text-left" rowspan="1" colspan="1"> </td>
           </tr>
           <tr>
             <td class="text-left" rowspan="1" colspan="1">97</td>
@@ -3681,7 +3670,7 @@ the smallest number of bytes.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
 <a href="#appendix-B" class="section-number selfRef">Appendix B. </a><a href="#name-encoding-and-decoding-examp" class="section-name selfRef">Encoding and Decoding Examples</a>
       </h2>
 <p id="appendix-B-1">The following examples represent a series of exchanges between an encoder and a
-decoder.  The exchanges are designed to exercise most QPACK instructions and
+decoder.  The exchanges are designed to exercise most QPACK instructions, and
 highlight potentially common patterns and their impact on dynamic table state.
 The encoder sends three encoded field sections containing one field line each,
 as well as two speculative inserts that are not referenced.<a href="#appendix-B-1" class="pilcrow">¶</a></p>
@@ -3693,7 +3682,7 @@ line have been acknowledged by the decoder.<a href="#appendix-B-2" class="pilcro
 <div id="literal-field-line-with-name-reference">
 <section id="appendix-B.1">
         <h3 id="name-literal-field-line-with-name-">
-<a href="#appendix-B.1" class="section-number selfRef">B.1. </a><a href="#name-literal-field-line-with-name-" class="section-name selfRef">Literal Field Line with Name Reference</a>
+<a href="#appendix-B.1" class="section-number selfRef">B.1. </a><a href="#name-literal-field-line-with-name-" class="section-name selfRef">Literal Field Line With Name Reference</a>
         </h3>
 <p id="appendix-B.1-1">The encoder sends an encoded field section containing a literal representation
 of a field with a static name reference.<a href="#appendix-B.1-1" class="pilcrow">¶</a></p>
@@ -3892,18 +3881,18 @@ Stream: Encoder
 </div>
 </section>
 </div>
-<div id="sample-single-pass-encoding-algorithm">
+<div id="sample-one-pass-encoding-algorithm">
 <section id="appendix-C">
-      <h2 id="name-sample-single-pass-encoding">
-<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-sample-single-pass-encoding" class="section-name selfRef">Sample Single-Pass Encoding Algorithm</a>
+      <h2 id="name-sample-one-pass-encoding-al">
+<a href="#appendix-C" class="section-number selfRef">Appendix C. </a><a href="#name-sample-one-pass-encoding-al" class="section-name selfRef">Sample One Pass Encoding Algorithm</a>
       </h2>
-<p id="appendix-C-1">Pseudocode for single-pass encoding, excluding handling of duplicates,
+<p id="appendix-C-1">Pseudo-code for single pass encoding, excluding handling of duplicates,
 non-blocking mode, available encoder stream flow control and reference tracking.<a href="#appendix-C-1" class="pilcrow">¶</a></p>
-<div id="appendix-C-2">
-<pre class="breakable lang-pseudocode sourcecode">
+<div class="alignLeft art-text artwork" id="appendix-C-2">
+<pre>
 # Helper functions:
 # ====
-# Encode an integer with the specified prefix and length
+# Encode an interger with the specified prefix and length
 encodeInteger(buffer, prefix, value, prefixLength)
 
 # Encode a dynamic table insert instruction with optional static
@@ -3913,13 +3902,13 @@ encodeInsert(buffer, staticNameIndex, dynamicNameIndex, fieldLine)
 # Encode a static index reference
 encodeStaticIndexReference(buffer, staticIndex)
 
-# Encode a dynamic index reference relative to Base
+# Encode a dynamic index reference relative to base
 encodeDynamicIndexReference(buffer, dynamicIndex, base)
 
 # Encode a literal with an optional static name index
 encodeLiteral(buffer, staticNameIndex, fieldLine)
 
-# Encode a literal with a dynamic name index relative to Base
+# Encode a literal with a dynamic name index relative to base
 encodeDynamicLiteral(buffer, dynamicNameIndex, base, fieldLine)
 
 # Encoding Algorithm
@@ -3947,7 +3936,7 @@ for line in fieldLines:
   if dynamicIndex is None:
     # Could not index it, literal
     if dynamicNameIndex is not None:
-      # Encode literal with dynamic name, possibly above Base
+      # Encode literal with dynamic name, possibly above base
       encodeDynamicLiteral(streamBuffer, dynamicNameIndex,
                            base, line)
       requiredInsertCount = max(requiredInsertCount,
@@ -3959,7 +3948,7 @@ for line in fieldLines:
     # Dynamic index reference
     assert(dynamicIndex is not None)
     requiredInsertCount = max(requiredInsertCount, dynamicIndex)
-    # Encode dynamicIndex, possibly above Base
+    # Encode dynamicIndex, possibly above base
     encodeDynamicIndexReference(streamBuffer, dynamicIndex, base)
 
 # encode the prefix
@@ -3992,36 +3981,35 @@ return encoderBuffer, prefixBuffer + streamBuffer
 <p id="appendix-D-1">The IETF QUIC Working Group received an enormous amount of support from many
 people.<a href="#appendix-D-1" class="pilcrow">¶</a></p>
 <p id="appendix-D-2">The compression design team did substantial work exploring the problem space and
-influencing the initial draft version of this document.  The contributions of
-design team members <span class="contact-name">Roberto Peon</span>, <span class="contact-name">Martin Thomson</span>, and
-<span class="contact-name">Dmitri Tikhonov</span> are gratefully acknowledged.<a href="#appendix-D-2" class="pilcrow">¶</a></p>
+influencing the initial draft.  The contributions of design team members Roberto
+Peon, Martin Thomson, and Dmitri Tikhonov are gratefully acknowledged.<a href="#appendix-D-2" class="pilcrow">¶</a></p>
 <p id="appendix-D-3">The following people also provided substantial contributions to this document:<a href="#appendix-D-3" class="pilcrow">¶</a></p>
-<ul class="compact">
-<li class="compact" id="appendix-D-4.1">{{{Bence Beky}}}<a href="#appendix-D-4.1" class="pilcrow">¶</a>
+<ul class="normal">
+<li class="normal" id="appendix-D-4.1">Bence Beky<a href="#appendix-D-4.1" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.2">{{{Alessandro Ghedini}}}<a href="#appendix-D-4.2" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.2">Alessandro Ghedini<a href="#appendix-D-4.2" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.3">{{{Ryan Hamilton}}}<a href="#appendix-D-4.3" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.3">Ryan Hamilton<a href="#appendix-D-4.3" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.4">{{{Robin Marx}}}<a href="#appendix-D-4.4" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.4">Robin Marx<a href="#appendix-D-4.4" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.5">{{{Patrick McManus}}}<a href="#appendix-D-4.5" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.5">Patrick McManus<a href="#appendix-D-4.5" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.6">{{{Kazuho Oku}{&amp;#22885; &amp;#19968;&amp;#31298;}}}<a href="#appendix-D-4.6" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.6">
+          <p id="appendix-D-4.6.1">        <span class="contact-name"><span class="non-ascii">奥 一穂</span> (<span class="ascii">Kazuho Oku</span>)</span><a href="#appendix-D-4.6.1" class="pilcrow">¶</a></p>
 </li>
-        <li class="compact" id="appendix-D-4.7">{{{Lucas Pardue}}}<a href="#appendix-D-4.7" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.7">Lucas Pardue<a href="#appendix-D-4.7" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.8">{{{Biren Roy}}}<a href="#appendix-D-4.8" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.8">Biren Roy<a href="#appendix-D-4.8" class="pilcrow">¶</a>
 </li>
-        <li class="compact" id="appendix-D-4.9">{{{Ian Swett}}}<a href="#appendix-D-4.9" class="pilcrow">¶</a>
+        <li class="normal" id="appendix-D-4.9">Ian Swett<a href="#appendix-D-4.9" class="pilcrow">¶</a>
 </li>
       </ul>
-<p id="appendix-D-5">This document draws heavily on the text of <span>[<a href="#RFC7541" class="xref">RFC7541</a>]</span>.  The indirect input of
+<p id="appendix-D-5">This draft draws heavily on the text of <span>[<a href="#RFC7541" class="cite xref">RFC7541</a>]</span>.  The indirect input of
 those authors is also gratefully acknowledged.<a href="#appendix-D-5" class="pilcrow">¶</a></p>
-<p id="appendix-D-6"><span class="contact-name">Buck Krasic</span>'s contribution was supported by Google during his employment
-there.<a href="#appendix-D-6" class="pilcrow">¶</a></p>
-<p id="appendix-D-7">A portion of <span class="contact-name">Mike Bishop</span>'s contribution was supported by Microsoft during
-his employment there.<a href="#appendix-D-7" class="pilcrow">¶</a></p>
+<p id="appendix-D-6">Buck's contribution was supported by Google during his employment there.<a href="#appendix-D-6" class="pilcrow">¶</a></p>
+<p id="appendix-D-7">A portion of Mike's contribution was supported by Microsoft during his
+employment there.<a href="#appendix-D-7" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="authors-addresses">
@@ -4031,9 +4019,10 @@ his employment there.<a href="#appendix-D-7" class="pilcrow">¶</a></p>
       </h2>
 <address class="vcard">
         <div dir="auto" class="left"><span class="fn nameRole">Charles 'Buck' Krasic</span></div>
+<div dir="auto" class="left"><span class="org">Netflix</span></div>
 <div class="email">
 <span>Email:</span>
-<a href="mailto:krasic@acm.org" class="email">krasic@acm.org</a>
+<a href="mailto:ckrasic@netflix.com" class="email">ckrasic@netflix.com</a>
 </div>
 </address>
 <address class="vcard">
